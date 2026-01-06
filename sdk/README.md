@@ -9,8 +9,9 @@ Guia completo de todas as funções disponíveis no SDK de Abstração do Simpli
 1. [Início Rápido](#início-rápido)
 2. [SAPClient](#sapclient)
 3. [Modelos de Dados](#modelos-de-dados)
-4. [Componentes Internos](#componentes-internos)
-5. [Protocolo SAP](#protocolo-sap)
+4. [Validações](#validações)
+5. [Componentes Internos](#componentes-internos)
+6. [Protocolo SAP](#protocolo-sap)
 
 ---
 
@@ -342,6 +343,49 @@ class UTXO:
     vout: int
     value: int  # satoshis
 ```
+
+---
+
+## Validações
+
+O SDK inclui validações automáticas para garantir a integridade das operações.
+
+### Tamanho do OP_RETURN
+
+O OP_RETURN tem um limite máximo de **80 bytes**. O SDK valida automaticamente:
+
+| Componente | Tamanho |
+|------------|---------|
+| Header (SAP + versão + tipo) | 5 bytes |
+| Payload máximo (CID/hash) | **75 bytes** |
+| **Total máximo** | 80 bytes |
+
+```python
+from sdk.protocols.sap import SAPProtocol
+
+# CID válido (46 bytes para CIDv0)
+SAPProtocol.encode_attest("QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG")  # OK
+
+# CID muito grande (> 75 bytes)
+try:
+    SAPProtocol.encode_attest("X" * 76)
+except SAPProtocol.PayloadTooLargeError as e:
+    print(e)  # "CID is 76 bytes, exceeds maximum of 75 bytes for OP_RETURN"
+
+# Desabilitar validação (não recomendado)
+SAPProtocol.encode_attest(cid, validate=False)
+```
+
+### Formatos Aceitos para CID
+
+O SDK aceita os seguintes formatos:
+
+| Formato | Exemplo | Bytes |
+|---------|---------|-------|
+| IPFS CIDv0 | `QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG` | 46 |
+| IPFS CIDv1 | `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi` | 59 |
+| SHA256 hex | `a1b2c3d4...` (64 chars) | 32 |
+| Hash raw | Qualquer hex válido | Variável |
 
 ---
 

@@ -78,7 +78,7 @@ INTERNAL_KEY = "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0
 ADMIN_SECRET = "c92b2771c01e3b89e446ab7c773cb7621a59e4d665902e26f1e847acc2d56379"
 DELEGATE_SECRET = "0f88f360602b68e02983c2e62a1cbd0e0d71a50f778f886abd1ccc3bc8b3ac9b"
 
-SAID_PAYLOAD = "534149440103a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+SAP_PAYLOAD = "5341500103a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
 
 
 def run_hal(args):
@@ -221,7 +221,7 @@ def main():
         outputs_json = json.dumps([
             {"address": VAULT_V3_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
             {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
-            {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+            {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
             {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
         ])
     else:

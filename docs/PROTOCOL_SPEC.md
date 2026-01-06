@@ -1,6 +1,6 @@
-# 📋 SAID Protocol Specification
+# 📋 SAP - Simplicity Attestation Protocol
 
-## Simplicity Attestation ID Protocol (SAID)
+## Simplicity Attestation Protocol (SAP)
 
 **Versão:** 1.0  
 **Data:** 2026-01-05  
@@ -10,7 +10,7 @@
 
 ## 1. Visão Geral
 
-O protocolo SAID define um formato padronizado para armazenar referências a atestações (certificados) em outputs OP_RETURN de transações Liquid/Bitcoin. O formato permite que indexadores identifiquem rapidamente transações relacionadas ao sistema Simplicity Attestation.
+O protocolo SAP define um formato padronizado para armazenar referências a atestações (certificados) em outputs OP_RETURN de transações Liquid/Bitcoin. O formato permite que indexadores identifiquem rapidamente transações relacionadas ao sistema Simplicity Attestation.
 
 ---
 
@@ -37,8 +37,8 @@ O protocolo SAID define um formato padronizado para armazenar referências a ate
 **Magic bytes** para identificar o protocolo Simplicity Attestation:
 
 ```
-ASCII:  "SAID"
-HEX:    0x53414944
+ASCII:  "SAP"
+HEX:    0x534150
 ```
 
 ### 2.2 VERSION (1 byte)
@@ -84,13 +84,13 @@ Depende do TYPE:
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAID    │ 01  │  01  │ QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG │
+│    SAP     │ 01  │  01  │ QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
-│ 53414944   │ 01  │  01  │ (46 bytes - CIDv0 base58)                       │
+│ 534150     │ 01  │  01  │ (46 bytes - CIDv0 base58)                       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
 
 HEX completo:
-53414944 01 01 516d59774150...
+534150 01 01 516d59774150...
 ```
 
 ### 3.2 Revogação de Atestação
@@ -98,9 +98,9 @@ HEX completo:
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAID    │ 01  │  02  │ <TXID>:<vout>                                   │
+│    SAP     │ 01  │  02  │ <TXID>:<vout>                                   │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
-│ 53414944   │ 01  │  02  │ (34 bytes - 32 bytes TXID + 2 bytes vout)       │
+│ 534150     │ 01  │  02  │ (34 bytes - 32 bytes TXID + 2 bytes vout)       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
 ```
 
@@ -119,7 +119,7 @@ def index_transaction(tx):
         # Verificar magic bytes
         if len(data) < 6:
             continue
-        if data[0:4] != b'SAID':
+        if data[0:4] != b'SAP\x00':
             continue
             
         # Parse header
@@ -162,7 +162,7 @@ O campo VERSION permite evolução do protocolo mantendo compatibilidade:
 O contrato Simplicity pode opcionalmente validar o prefixo:
 
 ```rust
-// Verificar que o OP_RETURN começa com "SAID"
+// Verificar que o OP_RETURN começa com "SAP"
 let maybe_datum = jet::output_null_datum(2, 0);
 // Extrair primeiros 4 bytes e comparar com 0x53414944
 ```
@@ -172,7 +172,7 @@ let maybe_datum = jet::output_null_datum(2, 0);
 | Componente | Tamanho | Acumulado |
 |------------|---------|-----------|
 | OP_RETURN max | 80 bytes | - |
-| TAG (SAID) | 4 bytes | 4 |
+| TAG (SAP) | 3 bytes | 3 |
 | VERSION | 1 byte | 5 |
 | TYPE | 1 byte | 6 |
 | CIDv0 | 46 bytes | 52 |
@@ -202,9 +202,9 @@ Para CIDv1 (mais longo), ainda cabe confortavelmente.
 ### Encoder (Python)
 
 ```python
-def encode_said_attest(cid: str) -> bytes:
+def encode_sap_attest(cid: str) -> bytes:
     """Codifica um OP_RETURN de emissão de atestação."""
-    tag = b'SAID'
+    tag = b'SAP'
     version = bytes([0x01])
     op_type = bytes([0x01])  # ATTEST
     payload = cid.encode('utf-8')
@@ -212,9 +212,9 @@ def encode_said_attest(cid: str) -> bytes:
     return tag + version + op_type + payload
 
 
-def encode_said_revoke(txid: bytes, vout: int) -> bytes:
+def encode_sap_revoke(txid: bytes, vout: int) -> bytes:
     """Codifica um OP_RETURN de revogação."""
-    tag = b'SAID'
+    tag = b'SAP'
     version = bytes([0x01])
     op_type = bytes([0x02])  # REVOKE
     payload = txid + vout.to_bytes(2, 'big')
@@ -229,36 +229,36 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 @dataclass
-class SAIDAttest:
+class SAPAttest:
     cid: str
 
-@dataclass 
-class SAIDRevoke:
+@dataclass
+class SAPRevoke:
     txid: bytes
     vout: int
 
-def decode_said(data: bytes) -> Optional[Union[SAIDAttest, SAIDRevoke]]:
-    """Decodifica um OP_RETURN SAID."""
-    if len(data) < 6:
+def decode_sap(data: bytes) -> Optional[Union[SAPAttest, SAPRevoke]]:
+    """Decodifica um OP_RETURN SAP."""
+    if len(data) < 5:
         return None
-    if data[0:4] != b'SAID':
+    if data[0:3] != b'SAP':
         return None
-        
-    version = data[4]
-    op_type = data[5]
-    payload = data[6:]
-    
+
+    version = data[3]
+    op_type = data[4]
+    payload = data[5:]
+
     if version != 0x01:
         return None
-        
+
     if op_type == 0x01:  # ATTEST
-        return SAIDAttest(cid=payload.decode('utf-8'))
+        return SAPAttest(cid=payload.decode('utf-8'))
     elif op_type == 0x02:  # REVOKE
-        return SAIDRevoke(txid=payload[0:32], vout=int.from_bytes(payload[32:34], 'big'))
+        return SAPRevoke(txid=payload[0:32], vout=int.from_bytes(payload[32:34], 'big'))
     
     return None
 ```
 
 ---
 
-*Simplicity Attestation - SAID Protocol Specification v1.0*
+*Simplicity Attestation Protocol (SAP) - Specification v1.0*

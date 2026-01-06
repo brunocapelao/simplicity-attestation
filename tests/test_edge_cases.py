@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAID System v2 - Edge Case Security Tests
+SAP System - Edge Case Security Tests
 
 This script tests various attack vectors and edge cases to verify
 that the covenant enforcement is working correctly.
@@ -49,7 +49,7 @@ RANDOM_SECRET = "111111111111111111111111111111111111111111111111111111111111111
 # Wrong destination (random P2TR address)
 WRONG_CERT_ADDRESS = "tex1qyh6tyhspd9w8jhqee8a2uzvyk9lnwp2n8ssur0"
 
-SAID_PAYLOAD = "534149440103a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+SAP_PAYLOAD = "5341500103a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
 
 
 def run_hal(args):
@@ -292,7 +292,7 @@ def emit_certificate_for_test(vault_utxo):
     outputs_json = json.dumps([
         {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
-        {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+        {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 
@@ -345,7 +345,7 @@ def emit_certificate_for_test(vault_utxo):
 
 def main():
     print("=" * 70)
-    print("SAID SYSTEM v2 - EDGE CASE SECURITY TESTS")
+    print("SAP SYSTEM - EDGE CASE SECURITY TESTS")
     print("=" * 70)
 
     # Get vault UTXO
@@ -374,7 +374,7 @@ def main():
     outputs_json = json.dumps([
         {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
-        {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+        {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 
@@ -391,7 +391,7 @@ def main():
     # =========================================================================
     outputs_json_3 = json.dumps([
         {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats + CERT_SATS))},
-        {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+        {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 
@@ -409,7 +409,7 @@ def main():
     outputs_json_wrong_dest = json.dumps([
         {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
         {"address": WRONG_CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
-        {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+        {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 
@@ -445,7 +445,7 @@ def main():
     outputs_json_wrong_troco = json.dumps([
         {"address": WRONG_CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},  # Wrong troco!
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
-        {"address": f"data:{SAID_PAYLOAD}", "asset": ASSET, "amount": 0},
+        {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 

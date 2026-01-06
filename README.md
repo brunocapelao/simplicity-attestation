@@ -1,4 +1,4 @@
-# SAID - Simplicity Attestation ID
+# SAP - Simplicity Attestation Protocol
 
 Sistema de certificados on-chain com delegacao hierarquica usando Simplicity na Liquid Network.
 
@@ -51,7 +51,7 @@ tests/
 └── test_edge_cases.py      # Testes de seguranca
 
 docs/
-├── PROTOCOL_SPEC.md        # Especificacao SAID
+├── PROTOCOL_SPEC.md        # Especificacao SAP
 └── DOCUMENTACAO.md         # Documentacao completa
 
 secrets.json                # Chaves e enderecos (testnet)
@@ -95,14 +95,14 @@ cd simfony && cargo build --release
 pip install embit requests
 ```
 
-## Protocolo SAID
+## Protocolo SAP
 
 ```
 OP_RETURN:
-┌────────┬─────────┬──────┬──────────────────────────┐
-│ "SAID" │ VERSION │ TYPE │     HASH/CID (32 bytes)  │
-│ 4 bytes│ 1 byte  │1 byte│        32 bytes          │
-└────────┴─────────┴──────┴──────────────────────────┘
+┌───────┬─────────┬──────┬──────────────────────────┐
+│ "SAP" │ VERSION │ TYPE │     HASH/CID (32 bytes)  │
+│3 bytes│ 1 byte  │1 byte│        32 bytes          │
+└───────┴─────────┴──────┴──────────────────────────┘
 ```
 
 ## Chaves (Testnet)

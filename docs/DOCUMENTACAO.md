@@ -1,4 +1,4 @@
-# SAID - Simplicity Attestation ID
+# SAP - Simplicity Attestation Protocol
 
 ## Sistema de Certificados On-Chain com Delegacao via Simplicity
 
@@ -10,7 +10,7 @@
 
 ## 1. Visao Geral
 
-O SAID e um sistema de certificados digitais on-chain que utiliza Simplicity na Liquid Network para:
+O SA e um sistema de certificados digitais on-chain que utiliza Simplicity na Liquid Network para:
 
 1. **Admin** (Autoridade Raiz) cria vaults de delegacao
 2. **Delegado** emite certificados gastando do vault
@@ -19,7 +19,7 @@ O SAID e um sistema de certificados digitais on-chain que utiliza Simplicity na 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         CADEIA DE CONFIANCA SAID                            │
+│                         CADEIA DE CONFIANCA SA.                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │   ADMIN (Autoridade Raiz)                                                   │
@@ -123,12 +123,12 @@ O SAID e um sistema de certificados digitais on-chain que utiliza Simplicity na 
 ║                      REGRA DE VALIDADE DO CERTIFICADO                     ║
 ╠═══════════════════════════════════════════════════════════════════════════╣
 ║                                                                           ║
-║   Certificate UTXO NAO GASTO  ──►  Certificado VALIDO   ✓                ║
-║   Certificate UTXO GASTO      ──►  Certificado REVOGADO ✗                ║
+║   Certificate UTXO NAO GASTO  ──►  Certificado VALIDO   ✓                 ║
+║   Certificate UTXO GASTO      ──►  Certificado REVOGADO ✗                 ║
 ║                                                                           ║
 ║   A validade e verificada consultando a blockchain:                       ║
-║   - Se o UTXO existe (unspent) = certificado ativo                       ║
-║   - Se o UTXO foi gasto = certificado revogado                           ║
+║   - Se o UTXO existe (unspent) = certificado ativo                        ║
+║   - Se o UTXO foi gasto = certificado revogado                            ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 ```
@@ -163,7 +163,7 @@ def verificar_certificado(txid: str, vout: int) -> bool:
 |------------|------|-----------|
 | **Delegation Vault (V)** | Script Simplicity | Pool de funding para emissao de certificados |
 | **Certificate (C)** | Script Simplicity | UTXO que representa um certificado valido |
-| **OP_RETURN** | Dados | Payload SAID com CID IPFS do certificado |
+| **OP_RETURN** | Dados | Payload SAP com CID IPFS do certificado |
 | **Admin Key** | Schnorr Pubkey | Autoridade raiz do sistema |
 | **Delegate Key** | Schnorr Pubkey | Autoridade delegada para emitir certificados |
 
@@ -228,7 +228,7 @@ Script simples que permite Admin OU Delegado gastar (revogar):
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  Nota: O ato de gastar este UTXO = revogar o certificado                   │
-│  Opcionalmente pode incluir OP_RETURN com SAID tipo REVOKE                 │
+│  Opcionalmente pode incluir OP_RETURN com SAP tipo REVOKE                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -345,7 +345,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Valor: 1000 sats (minimo)                             │    │
 │     │                                                                  │    │
 │     │ Output 2: OP_RETURN                                             │    │
-│     │           Dados: SAID 01 01 <CID_IPFS>                          │    │
+│     │           Dados: SAP 01 01 <CID_IPFS>                           │    │
 │     │                                                                  │    │
 │     │ Output 3: Fee                                                   │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -376,7 +376,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │ Output 0: Qualquer endereco (recupera os sats)                  │    │
 │     │                                                                  │    │
 │     │ Output 1: OP_RETURN (opcional)                                  │    │
-│     │           Dados: SAID 01 02 <TXID_ORIGINAL:VOUT>                │    │
+│     │           Dados: SAP 01 02 <TXID_ORIGINAL:VOUT>                 │    │
 │     │                                                                  │    │
 │     │ Output 2: Fee                                                   │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -420,17 +420,17 @@ disconnect(committed_expr, disconnected_expr_cmr)
 
 ---
 
-## 6. Protocolo SAID (OP_RETURN)
+## 6. Protocolo SAP (OP_RETURN)
 
 ### 6.1 Formato
 
 ```
-┌────────┬─────────┬──────────┬─────────────────────────────────────┐
-│  TAG   │ VERSION │   TYPE   │             PAYLOAD                 │
-│ "SAID" │  0x01   │  0x01    │   CID IPFS (46-59 bytes)           │
-├────────┼─────────┼──────────┼─────────────────────────────────────┤
-│ 4 bytes│ 1 byte  │  1 byte  │           variavel                  │
-└────────┴─────────┴──────────┴─────────────────────────────────────┘
+┌───────┬─────────┬──────────┬─────────────────────────────────────┐
+│  TAG  │ VERSION │   TYPE   │             PAYLOAD                 │
+│ "SAP" │  0x01   │  0x01    │   CID IPFS (46-59 bytes)           │
+├───────┼─────────┼──────────┼─────────────────────────────────────┤
+│3 bytes│ 1 byte  │  1 byte  │           variavel                  │
+└───────┴─────────┴──────────┴─────────────────────────────────────┘
 ```
 
 ### 6.2 Tipos de Operacao
@@ -445,20 +445,20 @@ disconnect(committed_expr, disconnected_expr_cmr)
 
 **Emissao:**
 ```
-534149440101516d59774150...
-│       │ │ └── CID: QmYwAP...
-│       │ └──── Tipo: ATTEST (0x01)
-│       └────── Versao: 1
-└────────────── Magic: "SAID"
+5341500101516d59774150...
+│     │ │ └── CID: QmYwAP...
+│     │ └──── Tipo: ATTEST (0x01)
+│     └────── Versao: 1
+└──────────── Magic: "SAP"
 ```
 
 **Revogacao:**
 ```
-53414944010212ab34cd56ef...0001
-│       │ │ └── TXID:VOUT referenciado
-│       │ └──── Tipo: REVOKE (0x02)
-│       └────── Versao: 1
-└────────────── Magic: "SAID"
+534150010212ab34cd56ef...0001
+│     │ │ └── TXID:VOUT referenciado
+│     │ └──── Tipo: REVOKE (0x02)
+│     └────── Versao: 1
+└──────────── Magic: "SAP"
 ```
 
 ---
@@ -626,12 +626,12 @@ def verificar_certificado(cert_txid: str, cert_vout: int = 1) -> dict:
     tx = get_transaction(cert_txid)
     op_return_data = parse_op_return(tx.outputs[2])
 
-    # 3. Decodificar SAID
-    said = decode_said(op_return_data)
+    # 3. Decodificar SAP
+    sap = decode_sap(op_return_data)
 
     return {
         "valido": utxo is not None,
-        "cid": said.cid,
+        "cid": sap.cid,
         "emitido_em": tx.block_height,
         "revogado_em": None if utxo else get_spend_height(cert_txid, cert_vout),
     }
@@ -687,4 +687,4 @@ Response:
 
 ---
 
-*SAID Protocol - Simplicity Attestation ID - v2.0*
+*SA Protocol - Simplicity Attestation*

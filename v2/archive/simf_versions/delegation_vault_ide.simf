@@ -1,0 +1,36 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMPLICITY ATTESTATION - Delegation Vault (IDE Version)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Versão adaptada para testar com o Web IDE usando as chaves Alice/Bob do IDE
+//
+// FUNCIONALIDADES:
+// - Admin (Alice): Pode gastar fundos livremente (controle total)
+// - Delegate (Bob): Pode emitir atestações com dados on-chain
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+fn checksig(pk: Pubkey, sig: Signature) {
+    let msg: u256 = jet::sig_all_hash();
+    jet::bip_0340_verify((pk, msg), sig);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMINHO DO ADMIN (Alice) - PODER TOTAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+fn admin_spend(admin_sig: Signature) {
+    // Admin (Alice do IDE) pode gastar para qualquer destino
+    let admin_pk: Pubkey = 0x9bef8d556d80e43ae7e0becb3a7e6838b95defe45896ed6075bb9035d06c9964;
+    checksig(admin_pk, admin_sig);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PONTO DE ENTRADA - Versão simplificada (só Admin)
+// ═══════════════════════════════════════════════════════════════════════════
+
+fn main() {
+    // Para teste, só validamos assinatura do Admin
+    let admin_sig: Signature = witness::ADMIN_SIGNATURE;
+    admin_spend(admin_sig);
+}

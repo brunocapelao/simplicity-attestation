@@ -1,0 +1,144 @@
+// =============================================================================
+// SAID - Delegation Vault v3
+// =============================================================================
+//
+// Sistema de certificados on-chain com delegacao hierarquica.
+// AGORA COM 3 PATHS DE GASTO:
+//
+// WITNESS STRUCTURE: Either<Signature, Either<Signature, Signature>>
+//
+// PATH 1 - ADMIN UNCONDITIONAL (Left):
+//   - Pode gastar incondicionalmente
+//   - Usado para: desativar delegado, recuperar fundos
+//
+// PATH 2 - ADMIN ISSUE CERTIFICATE (Right-Left):
+//   - Admin emite certificado COM covenants enforced
+//   - Mesmas regras do delegate
+//
+// PATH 3 - DELEGATE ISSUE CERTIFICATE (Right-Right):
+//   - Delegado emite certificado COM covenants enforced
+//   - Output 0: Troco DEVE ir para este vault (self-reference)
+//   - Output 1: Certificate DEVE ir para certificate script
+//   - Output 2: OP_RETURN com dados
+//   - Output 3: Fee
+//
+// =============================================================================
+
+fn checksig(pk: Pubkey, sig: Signature) {
+    let msg: u256 = jet::sig_all_hash();
+    jet::bip_0340_verify((pk, msg), sig);
+}
+
+// =============================================================================
+// ADMIN UNCONDITIONAL - Gasto Livre (Path: Left)
+// =============================================================================
+
+fn admin_unconditional(admin_sig: Signature) {
+    let admin_pk: Pubkey = 0xbcc13efe121b35c7270c41ce63dab7688c0326c58c5f5e1d1af317c1503cad45;
+    checksig(admin_pk, admin_sig);
+}
+
+// =============================================================================
+// CERTIFICATE ISSUANCE - Covenants Enforced (Shared by Admin and Delegate)
+// =============================================================================
+
+fn issue_certificate_with_covenants() {
+    // =========================================================================
+    // VALIDACAO 1: Exatamente 4 outputs
+    // =========================================================================
+    let num_outs: u32 = jet::num_outputs();
+    assert!(jet::eq_32(num_outs, 4));
+
+    // =========================================================================
+    // VALIDACAO 2: Output 0 deve ser o proprio vault (SELF-REFERENCE)
+    // =========================================================================
+    let self_hash: u256 = jet::current_script_hash();
+    let maybe_output0: Option<u256> = jet::output_script_hash(0);
+    match maybe_output0 {
+        Some(out_hash: u256) => assert!(jet::eq_256(self_hash, out_hash)),
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDACAO 3: Output 1 deve ser o certificate script
+    // =========================================================================
+    // SHA256 do scriptPubKey do certificate_v2.simf
+    let cert_script_hash: u256 = 0x00c088760d79e8a0e5e11513c9eff1b8d388c703c8dbb921c6c7a9ee371ffc0a;
+    let maybe_output1: Option<u256> = jet::output_script_hash(1);
+    match maybe_output1 {
+        Some(cert_hash: u256) => assert!(jet::eq_256(cert_script_hash, cert_hash)),
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDACAO 4: Output 2 deve conter OP_RETURN com dados
+    // =========================================================================
+    let output_idx: u32 = 2;
+    let datum_idx: u32 = 0;
+    let maybe_datum: Option<Option<Either<(u2, u256), Either<u1, u4>>>> = jet::output_null_datum(output_idx, datum_idx);
+    match maybe_datum {
+        Some(inner_opt: Option<Either<(u2, u256), Either<u1, u4>>>) => {
+            match inner_opt {
+                Some(datum: Either<(u2, u256), Either<u1, u4>>) => { /* OP_RETURN existe - OK */ },
+                None => panic!(),
+            };
+        },
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDACAO 5: Output 3 deve ser fee
+    // =========================================================================
+    let maybe_fee: Option<bool> = jet::output_is_fee(3);
+    match maybe_fee {
+        Some(is_fee: bool) => assert!(is_fee),
+        None => panic!(),
+    };
+}
+
+// =============================================================================
+// ADMIN ISSUE CERTIFICATE - Com Covenants (Path: Right-Left)
+// =============================================================================
+
+fn admin_issue_certificate(admin_sig: Signature) {
+    // Primeiro verifica todos os covenants
+    issue_certificate_with_covenants();
+
+    // Depois valida assinatura do Admin
+    let admin_pk: Pubkey = 0xbcc13efe121b35c7270c41ce63dab7688c0326c58c5f5e1d1af317c1503cad45;
+    checksig(admin_pk, admin_sig);
+}
+
+// =============================================================================
+// DELEGATE ISSUE CERTIFICATE - Com Covenants (Path: Right-Right)
+// =============================================================================
+
+fn delegate_issue_certificate(delegate_sig: Signature) {
+    // Primeiro verifica todos os covenants
+    issue_certificate_with_covenants();
+
+    // Depois valida assinatura do Delegate
+    let delegate_pk: Pubkey = 0x8577f4e053850a2eb0c86ce4c81215fdec681c28e01648f4401e0c47a4276413;
+    checksig(delegate_pk, delegate_sig);
+}
+
+// =============================================================================
+// PONTO DE ENTRADA
+// =============================================================================
+// Witness: Either<Signature, Either<Signature, Signature>>
+//   Left(sig)         = Admin Unconditional
+//   Right(Left(sig))  = Admin Issue Certificate
+//   Right(Right(sig)) = Delegate Issue Certificate
+// =============================================================================
+
+fn main() {
+    match witness::SPENDING_PATH {
+        Left(admin_sig: Signature) => admin_unconditional(admin_sig),
+        Right(inner: Either<Signature, Signature>) => {
+            match inner {
+                Left(admin_sig: Signature) => admin_issue_certificate(admin_sig),
+                Right(delegate_sig: Signature) => delegate_issue_certificate(delegate_sig),
+            }
+        },
+    }
+}

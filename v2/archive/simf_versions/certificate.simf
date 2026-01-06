@@ -1,0 +1,55 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMPLICITY ATTESTATION - Attestation Contract
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// A EXISTÊNCIA deste UTXO representa uma atestação VÁLIDA.
+// A REVOGAÇÃO é feita queimando o UTXO (enviando para fee).
+//
+// QUEM PODE REVOGAR:
+// - Admin: Fornece assinatura via Left(sig)
+// - Delegate: Fornece assinatura via Right(sig)
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Chaves públicas hardcoded (formato x-only, 32 bytes)
+// Admin (Alice) - tem poder total
+// Delegate (Bob) - poder limitado
+
+fn checksig(pk: Pubkey, sig: Signature) {
+    let msg: u256 = jet::sig_all_hash();
+    jet::bip_0340_verify((pk, msg), sig);
+}
+
+fn verify_single_fee_output() {
+    // Deve haver exatamente 1 output
+    let num_outs: u32 = jet::num_outputs();
+    assert!(jet::eq_32(num_outs, 1));
+    
+    // O único output deve ser fee (burn)
+    let maybe_fee: Option<bool> = jet::output_is_fee(0);
+    match maybe_fee {
+        Some(is_fee: bool) => assert!(is_fee),
+        None => panic!(),
+    };
+}
+
+fn admin_revoke(admin_sig: Signature) {
+    verify_single_fee_output();
+    // Chave do Admin (Alice)
+    let admin_pk: Pubkey = 0xbcc13efe121b35c7270c41ce63dab7688c0326c58c5f5e1d1af317c1503cad45;
+    checksig(admin_pk, admin_sig);
+}
+
+fn delegate_revoke(delegate_sig: Signature) {
+    verify_single_fee_output();
+    // Chave do Delegate (Bob)
+    let delegate_pk: Pubkey = 0x8577f4e053850a2eb0c86ce4c81215fdec681c28e01648f4401e0c47a4276413;
+    checksig(delegate_pk, delegate_sig);
+}
+
+fn main() {
+    match witness::ADMIN_OR_DELEGATE {
+        Left(admin_sig: Signature) => admin_revoke(admin_sig),
+        Right(delegate_sig: Signature) => delegate_revoke(delegate_sig),
+    }
+}

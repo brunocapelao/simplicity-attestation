@@ -1,0 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMPLE TEST - Contrato sem verificação de assinatura
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Este contrato sempre permite gastar os fundos.
+// Usado apenas para testar o fluxo de withdrawal do CLI.
+//
+
+fn main() {
+    // Sempre sucede - sem verificação de assinatura
+    // Apenas verifica que há pelo menos 1 output
+    let num_outs: u32 = jet::num_outputs();
+    assert!(jet::le_32(1, num_outs));
+}

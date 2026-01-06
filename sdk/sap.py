@@ -51,6 +51,7 @@ from .infra.hal import HalSimplicity
 from .infra.api import BlockstreamAPI
 from .infra.keys import KeyManager
 from .core.witness import WitnessEncoder
+from .protocols.sap import SAPProtocol
 from .errors import SAPError, VaultEmptyError, InsufficientFundsError
 
 
@@ -69,6 +70,62 @@ class PermissionError(SAPError):
     pass
 
 
+def _script_pubkey_to_address(script_pubkey: str, network: str) -> str:
+    """Encode a taproot scriptPubKey into a bech32m address."""
+    from embit import bech32
+
+    if not script_pubkey.startswith("5120") or len(script_pubkey) != 68:
+        raise ValueError("Invalid taproot scriptPubKey")
+
+    hrp = "tex" if network == "testnet" else "ex"
+    output_key = bytes.fromhex(script_pubkey[4:])
+    return bech32.encode(hrp, 1, output_key)
+
+
+def _script_pubkey_from_hal(
+    hal_path: str,
+    internal_key_hex: str,
+    cmr_hex: str,
+    asset_id: str
+) -> str:
+    """Derive taproot scriptPubKey using hal-simplicity's own logic."""
+    import re
+
+    dummy_inputs = json.dumps([{"txid": "00" * 32, "vout": 0}])
+    dummy_outputs = json.dumps([{"address": "fee", "asset": asset_id, "amount": 0.000001}])
+
+    create = subprocess.run(
+        [hal_path, "simplicity", "pset", "create", "--liquid", dummy_inputs, dummy_outputs],
+        capture_output=True,
+        text=True
+    )
+    if create.returncode != 0:
+        raise CompilationError(f"hal pset create failed: {create.stderr}")
+
+    pset = json.loads(create.stdout)["pset"]
+
+    dummy_script_pubkey = "5120" + ("00" * 32)
+    update = subprocess.run(
+        [
+            hal_path, "simplicity", "pset", "update-input", "--liquid",
+            pset, "0",
+            "--input-utxo", f"{dummy_script_pubkey}:{asset_id}:0.000001",
+            "--cmr", cmr_hex,
+            "--internal-key", internal_key_hex
+        ],
+        capture_output=True,
+        text=True
+    )
+    if update.returncode != 0:
+        raise CompilationError(f"hal pset update-input failed: {update.stderr}")
+
+    match = re.search(r"output key ([0-9a-f]{64})", update.stdout)
+    if not match:
+        raise CompilationError(f"unable to derive output key: {update.stdout}")
+
+    return f"5120{match.group(1)}"
+
+
 @dataclass
 class VaultConfig:
     """
@@ -82,9 +139,11 @@ class VaultConfig:
     vault_address: str
     vault_cmr: str
     vault_program: str
+    vault_script_pubkey: str  # The actual taproot scriptPubKey
     certificate_address: str
     certificate_cmr: str
     certificate_program: str
+    certificate_script_pubkey: str  # The actual taproot scriptPubKey
     internal_key: str
     
     def save(self, path: str):
@@ -174,17 +233,31 @@ class SAP:
             simc_path, hal_path, network
         )
         
+        # Derive scriptPubKey using hal-simplicity to match update-input checks
+        vault_script_pubkey = _script_pubkey_from_hal(
+            hal_path, cls.INTERNAL_KEY, vault_data["cmr"], network_config["asset_id"]
+        )
+        cert_script_pubkey = _script_pubkey_from_hal(
+            hal_path, cls.INTERNAL_KEY, cert_data["cmr"], network_config["asset_id"]
+        )
+        
+        # Derive addresses from scriptPubKey to satisfy covenants
+        vault_address = _script_pubkey_to_address(vault_script_pubkey, network)
+        cert_address = _script_pubkey_to_address(cert_script_pubkey, network)
+        
         return VaultConfig(
             network=network,
             asset_id=network_config["asset_id"],
             admin_pubkey=admin_pubkey,
             delegate_pubkey=delegate_pubkey,
-            vault_address=vault_data["address"],
+            vault_address=vault_address,
             vault_cmr=vault_data["cmr"],
             vault_program=vault_data["program"],
-            certificate_address=cert_data["address"],
+            vault_script_pubkey=vault_script_pubkey,
+            certificate_address=cert_address,
             certificate_cmr=cert_data["cmr"],
             certificate_program=cert_data["program"],
+            certificate_script_pubkey=cert_script_pubkey,
             internal_key=cls.INTERNAL_KEY,
         )
     
@@ -320,7 +393,7 @@ class SAP:
         
         return Vault(
             address=self.vault_address,
-            script_pubkey=f"5120{self.config.vault_cmr}",
+            script_pubkey=self.config.vault_script_pubkey,
             cmr=self.config.vault_cmr,
             program=self.config.vault_program,
             balance=balance,
@@ -377,7 +450,8 @@ class SAP:
         self,
         txid: str,
         vout: int = 1,
-        recipient: Optional[str] = None
+        recipient: Optional[str] = None,
+        reason_code: Optional[int] = None
     ) -> TransactionResult:
         """
         Revoke a certificate.
@@ -404,7 +478,7 @@ class SAP:
                 error=f"Certificate UTXO not found: {txid}:{vout}"
             )
         
-        return self._build_and_sign_revoke(cert_utxo, recipient)
+        return self._build_and_sign_revoke(cert_utxo, recipient, reason_code)
     
     def verify_certificate(self, txid: str, vout: int = 1) -> CertificateStatus:
         """Verify a certificate's status."""
@@ -457,7 +531,7 @@ class SAP:
             pset = self.hal.pset_update_input(
                 pset=pset,
                 index=0,
-                script_pubkey=f"5120{self.config.vault_cmr}",
+                script_pubkey=self.config.vault_script_pubkey,
                 asset=self.asset_id,
                 amount=f"{vault_utxo.value / 100_000_000:.8f}",
                 cmr=self.config.vault_cmr,
@@ -480,25 +554,38 @@ class SAP:
         except Exception as e:
             return TransactionResult(success=False, error=str(e))
     
-    def _build_and_sign_revoke(self, cert_utxo: UTXO, recipient: Optional[str]) -> TransactionResult:
+    def _build_and_sign_revoke(
+        self,
+        cert_utxo: UTXO,
+        recipient: Optional[str],
+        reason_code: Optional[int]
+    ) -> TransactionResult:
         """Build and sign certificate revocation."""
         FEE_SATS = 500
         
         inputs = [{"txid": cert_utxo.txid, "vout": cert_utxo.vout}]
         
+        sap_payload = None
+        if reason_code is not None:
+            sap_payload = SAPProtocol.encode_revoke(cert_utxo.txid, cert_utxo.vout, reason_code=reason_code)
+
         if recipient and cert_utxo.value > FEE_SATS:
             output_sats = cert_utxo.value - FEE_SATS
             outputs = [
                 {"address": recipient, "asset": self.asset_id,
-                 "amount": output_sats / 100_000_000},
+                 "amount": output_sats / 100_000_000}
+            ]
+            if sap_payload:
+                outputs.append({"address": f"data:{sap_payload}", "asset": self.asset_id, "amount": 0})
+            outputs.append(
                 {"address": "fee", "asset": self.asset_id,
                  "amount": FEE_SATS / 100_000_000}
-            ]
+            )
         else:
-            outputs = [
-                {"address": "fee", "asset": self.asset_id,
-                 "amount": cert_utxo.value / 100_000_000}
-            ]
+            outputs = [{"address": "fee", "asset": self.asset_id,
+                        "amount": cert_utxo.value / 100_000_000}]
+            if sap_payload:
+                outputs.append({"address": f"data:{sap_payload}", "asset": self.asset_id, "amount": 0})
         
         try:
             pset = self.hal.pset_create(inputs, outputs)
@@ -506,7 +593,7 @@ class SAP:
             pset = self.hal.pset_update_input(
                 pset=pset,
                 index=0,
-                script_pubkey=f"5120{self.config.certificate_cmr}",
+                script_pubkey=self.config.certificate_script_pubkey,
                 asset=self.asset_id,
                 amount=f"{cert_utxo.value / 100_000_000:.8f}",
                 cmr=self.config.certificate_cmr,
@@ -546,7 +633,7 @@ class SAP:
             pset = self.hal.pset_update_input(
                 pset=pset,
                 index=0,
-                script_pubkey=f"5120{self.config.vault_cmr}",
+                script_pubkey=self.config.vault_script_pubkey,
                 asset=self.asset_id,
                 amount=f"{vault_utxo.value / 100_000_000:.8f}",
                 cmr=self.config.vault_cmr,
@@ -612,21 +699,29 @@ class SAP:
         if not template_path.exists():
             raise CompilationError(f"Contract not found: {template_path}")
         
-        # Read and update pubkeys in contract
         content = template_path.read_text()
         
-        # Replace pubkey placeholders (find 64-char hex after 0x)
+        # Find pubkeys by context: look for "let xxx_pk: Pubkey = 0x..." pattern
+        # This avoids replacing non-pubkey hex values like cert_script_hash
         import re
-        pubkeys_in_file = re.findall(r'0x([a-f0-9]{64})', content)
         
-        # First unique pubkey -> admin, second -> delegate
-        if len(pubkeys_in_file) >= 2:
-            old_admin = pubkeys_in_file[0]
-            # Find second unique
-            old_delegate = next((p for p in pubkeys_in_file[1:] if p != old_admin), pubkeys_in_file[1])
-            
-            content = content.replace(old_admin, admin_pubkey)
-            content = content.replace(old_delegate, delegate_pubkey)
+        # Pattern: variable name containing "pk" or "pubkey" followed by hex
+        admin_pattern = r'(admin_pk:\s*Pubkey\s*=\s*0x)([a-f0-9]{64})'
+        delegate_pattern = r'(delegate_pk:\s*Pubkey\s*=\s*0x)([a-f0-9]{64})'
+        
+        # Replace admin pubkey
+        content = re.sub(
+            admin_pattern,
+            r'\g<1>' + admin_pubkey,
+            content
+        )
+        
+        # Replace delegate pubkey
+        content = re.sub(
+            delegate_pattern,
+            r'\g<1>' + delegate_pubkey,
+            content
+        )
         
         # Write to temp file
         import tempfile

@@ -244,6 +244,7 @@ class SAPClient:
         vout: int = 1,
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
+        reason_code: Optional[int] = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -279,6 +280,7 @@ class SAPClient:
             cert_utxo=cert_utxo,
             revoker=revoker,
             recipient=recipient,
+            reason_code=reason_code,
             broadcast=broadcast
         )
     
@@ -440,7 +442,8 @@ class SAPClient:
         txid: str,
         vout: int = 1,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None
+        recipient: Optional[str] = None,
+        reason_code: Optional[int] = None
     ) -> PreparedTransaction:
         """
         Prepare a certificate revocation for external signing.
@@ -470,7 +473,8 @@ class SAPClient:
         prepared_data = self.transaction_builder.prepare_revoke_certificate(
             cert_utxo=cert_utxo,
             revoker=revoker,
-            recipient=recipient
+            recipient=recipient,
+            reason_code=reason_code
         )
         
         return PreparedTransaction(
@@ -485,6 +489,7 @@ class SAPClient:
             details={
                 "certificate": f"{txid}:{vout}",
                 "recipient": recipient or "(burn as fee)",
+                "reason_code": reason_code,
             }
         )
     

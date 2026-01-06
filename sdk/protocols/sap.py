@@ -20,6 +20,7 @@ class SAPRevoke:
     """SAP Revocation payload."""
     txid: str
     vout: int
+    reason_code: Optional[int] = None
     version: int = 1
 
 
@@ -110,13 +111,14 @@ class SAPProtocol:
         return (header + cid_bytes).hex()
     
     @classmethod
-    def encode_revoke(cls, txid: str, vout: int) -> str:
+    def encode_revoke(cls, txid: str, vout: int, reason_code: Optional[int] = None) -> str:
         """
         Encode a revocation OP_RETURN payload.
         
         Args:
             txid: Transaction ID of the certificate to revoke.
             vout: Output index of the certificate.
+            reason_code: Optional small integer reason code (0-255).
         
         Returns:
             Hex-encoded SAP payload.
@@ -124,8 +126,15 @@ class SAPProtocol:
         header = cls.MAGIC + bytes([cls.VERSION, cls.TYPE_REVOKE])
         txid_bytes = bytes.fromhex(txid)
         vout_bytes = vout.to_bytes(2, 'big')
-        
-        return (header + txid_bytes + vout_bytes).hex()
+        payload = txid_bytes + vout_bytes
+
+        if reason_code is not None:
+            if not (0 <= reason_code <= 255):
+                raise ValueError("reason_code must be between 0 and 255")
+            payload += bytes([reason_code])
+
+        cls.validate_payload_size(payload, "REVOKE payload")
+        return (header + payload).hex()
     
     @classmethod
     def encode_update(cls, cid: str, validate: bool = True) -> str:
@@ -193,7 +202,8 @@ class SAPProtocol:
                 return None
             txid = payload[:32].hex()
             vout = int.from_bytes(payload[32:34], 'big')
-            return SAPRevoke(txid=txid, vout=vout, version=version)
+            reason_code = payload[34] if len(payload) >= 35 else None
+            return SAPRevoke(txid=txid, vout=vout, reason_code=reason_code, version=version)
         
         elif op_type == cls.TYPE_UPDATE:
             try:

@@ -14,6 +14,7 @@ from .contracts import ContractRegistry
 from ..infra.hal import HalSimplicity
 from ..infra.api import BlockstreamAPI
 from ..infra.keys import KeyManager
+from ..protocols.sap import SAPProtocol
 
 
 class TransactionBuilder:
@@ -147,6 +148,7 @@ class TransactionBuilder:
         cert_utxo: UTXO,
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
+        reason_code: Optional[int] = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -163,21 +165,35 @@ class TransactionBuilder:
         """
         cert = self.contracts.certificate
         
+        outputs = []
+        sap_payload = None
+        if reason_code is not None:
+            sap_payload = self._build_sap_revoke_payload(cert_utxo.txid, cert_utxo.vout, reason_code)
+
         # Calculate outputs
         if recipient and cert_utxo.value > self.FEE_SATS:
             output_sats = cert_utxo.value - self.FEE_SATS
-            outputs = [
+            outputs.append(
                 {"address": recipient, "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(output_sats)},
-                {"address": "fee", "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(self.FEE_SATS)}
-            ]
+                 "amount": self._sats_to_btc(output_sats)}
+            )
         else:
             # Burn everything as fee
-            outputs = [
+            outputs.append(
                 {"address": "fee", "asset": self.contracts.asset_id,
                  "amount": self._sats_to_btc(cert_utxo.value)}
-            ]
+            )
+
+        if sap_payload:
+            outputs.append(
+                {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0}
+            )
+
+        if recipient and cert_utxo.value > self.FEE_SATS:
+            outputs.append(
+                {"address": "fee", "asset": self.contracts.asset_id,
+                 "amount": self._sats_to_btc(self.FEE_SATS)}
+            )
         
         inputs = [cert_utxo.to_dict()]
         
@@ -343,6 +359,10 @@ class TransactionBuilder:
         
         payload = magic + version + op_type + cid_bytes
         return payload.hex()
+
+    def _build_sap_revoke_payload(self, txid: str, vout: int, reason_code: Optional[int]) -> str:
+        """Build SAP REVOKE OP_RETURN payload with optional reason code."""
+        return SAPProtocol.encode_revoke(txid, vout, reason_code=reason_code)
     
     # =========================================================================
     # External Signature Support (prepare/finalize pattern)
@@ -395,24 +415,39 @@ class TransactionBuilder:
         self,
         cert_utxo: UTXO,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None
+        recipient: Optional[str] = None,
+        reason_code: Optional[int] = None
     ) -> dict:
         """Prepare certificate revocation for external signing."""
         cert = self.contracts.certificate
-        
+
+        outputs = []
+        sap_payload = None
+        if reason_code is not None:
+            sap_payload = self._build_sap_revoke_payload(cert_utxo.txid, cert_utxo.vout, reason_code)
+
         if recipient and cert_utxo.value > self.FEE_SATS:
             output_sats = cert_utxo.value - self.FEE_SATS
-            outputs = [
+            outputs.append(
                 {"address": recipient, "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(output_sats)},
-                {"address": "fee", "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(self.FEE_SATS)}
-            ]
+                 "amount": self._sats_to_btc(output_sats)}
+            )
         else:
-            outputs = [
+            outputs.append(
                 {"address": "fee", "asset": self.contracts.asset_id,
                  "amount": self._sats_to_btc(cert_utxo.value)}
-            ]
+            )
+
+        if sap_payload:
+            outputs.append(
+                {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0}
+            )
+
+        if recipient and cert_utxo.value > self.FEE_SATS:
+            outputs.append(
+                {"address": "fee", "asset": self.contracts.asset_id,
+                 "amount": self._sats_to_btc(self.FEE_SATS)}
+            )
         
         inputs = [cert_utxo.to_dict()]
         dummy_witness = WitnessEncoder.certificate_dummy(revoker)
@@ -563,4 +598,3 @@ class TransactionBuilder:
                 success=False,
                 error=str(e)
             )
-

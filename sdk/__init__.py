@@ -70,7 +70,10 @@ from .logging import StructuredLogger, LogLevel, create_file_logger
 # Vault creation and funding
 from .vault import VaultBuilder, VaultFunder, VaultSetup
 
-__version__ = "0.5.0"
+# Tool management
+from .tools import ToolManager, ensure_tools, get_tool_path
+
+__version__ = "0.6.0"
 __all__ = [
     # Core
     "SAPClient",

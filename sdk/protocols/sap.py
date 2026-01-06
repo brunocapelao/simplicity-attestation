@@ -53,16 +53,47 @@ class SAPProtocol:
     TYPE_DELEGATE = 0x10
     TYPE_UNDELEGATE = 0x11
     
+    # OP_RETURN size limits
+    MAX_OP_RETURN_SIZE = 80  # Maximum OP_RETURN data size
+    HEADER_SIZE = 5          # 3 (magic) + 1 (version) + 1 (type)
+    MAX_PAYLOAD_SIZE = MAX_OP_RETURN_SIZE - HEADER_SIZE  # 75 bytes for payload
+    
+    class PayloadTooLargeError(Exception):
+        """Raised when payload exceeds OP_RETURN size limit."""
+        pass
+    
     @classmethod
-    def encode_attest(cls, cid: str) -> str:
+    def validate_payload_size(cls, payload: bytes, payload_type: str = "payload") -> None:
+        """
+        Validate that payload doesn't exceed OP_RETURN limits.
+        
+        Args:
+            payload: The payload bytes to validate.
+            payload_type: Description for error message.
+        
+        Raises:
+            PayloadTooLargeError: If payload exceeds 75 bytes.
+        """
+        if len(payload) > cls.MAX_PAYLOAD_SIZE:
+            raise cls.PayloadTooLargeError(
+                f"{payload_type} is {len(payload)} bytes, exceeds maximum of "
+                f"{cls.MAX_PAYLOAD_SIZE} bytes for OP_RETURN"
+            )
+    
+    @classmethod
+    def encode_attest(cls, cid: str, validate: bool = True) -> str:
         """
         Encode an attestation OP_RETURN payload.
         
         Args:
             cid: IPFS CID or content hash.
+            validate: If True, validates payload size (default: True).
         
         Returns:
             Hex-encoded SAP payload.
+        
+        Raises:
+            PayloadTooLargeError: If CID exceeds 75 bytes.
         """
         header = cls.MAGIC + bytes([cls.VERSION, cls.TYPE_ATTEST])
         
@@ -71,6 +102,10 @@ class SAPProtocol:
             cid_bytes = bytes.fromhex(cid)
         except ValueError:
             cid_bytes = cid.encode('utf-8')
+        
+        # Validate size
+        if validate:
+            cls.validate_payload_size(cid_bytes, "CID")
         
         return (header + cid_bytes).hex()
     
@@ -93,15 +128,19 @@ class SAPProtocol:
         return (header + txid_bytes + vout_bytes).hex()
     
     @classmethod
-    def encode_update(cls, cid: str) -> str:
+    def encode_update(cls, cid: str, validate: bool = True) -> str:
         """
         Encode an update OP_RETURN payload.
         
         Args:
             cid: New IPFS CID.
+            validate: If True, validates payload size (default: True).
         
         Returns:
             Hex-encoded SAP payload.
+        
+        Raises:
+            PayloadTooLargeError: If CID exceeds 75 bytes.
         """
         header = cls.MAGIC + bytes([cls.VERSION, cls.TYPE_UPDATE])
         
@@ -109,6 +148,10 @@ class SAPProtocol:
             cid_bytes = bytes.fromhex(cid)
         except ValueError:
             cid_bytes = cid.encode('utf-8')
+        
+        # Validate size
+        if validate:
+            cls.validate_payload_size(cid_bytes, "CID")
         
         return (header + cid_bytes).hex()
     

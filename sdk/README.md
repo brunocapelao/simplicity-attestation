@@ -1,4 +1,4 @@
-# SAP SDK v0.5.0 - Documentação Completa
+# SAP SDK v0.6.0 - Documentação Completa
 
 SDK Python para o Simplicity Attestation Protocol na rede Liquid.
 
@@ -6,25 +6,79 @@ SDK Python para o Simplicity Attestation Protocol na rede Liquid.
 
 ## Índice
 
-1. [Início Rápido](#início-rápido)
-2. [Arquitetura de Segurança](#arquitetura-de-segurança)
-3. [SAPClient](#sapclient)
-4. [Assinatura Externa](#assinatura-externa)
-5. [Criação de Vault](#criação-de-vault)
-6. [Controle de Acesso](#controle-de-acesso)
-7. [Modelos de Dados](#modelos-de-dados)
-8. [Features de Produção](#features-de-produção)
-9. [Protocolo SAP](#protocolo-sap)
+1. [Pré-requisitos](#pré-requisitos)
+2. [Início Rápido](#início-rápido)
+3. [Arquitetura de Segurança](#arquitetura-de-segurança)
+4. [SAPClient](#sapclient)
+5. [Assinatura Externa](#assinatura-externa)
+6. [Criação de Vault](#criação-de-vault)
+7. [Controle de Acesso](#controle-de-acesso)
+8. [Modelos de Dados](#modelos-de-dados)
+9. [Features de Produção](#features-de-produção)
+10. [Protocolo SAP](#protocolo-sap)
 
 ---
 
-## Início Rápido
+## Pré-requisitos
 
-### Instalação
+### Dependências Python
 
 ```bash
 pip install embit requests
 ```
+
+### Ferramentas Externas (Rust)
+
+O SDK requer duas ferramentas compiladas em Rust:
+
+#### 1. simc (Simfony Compiler)
+
+Compila contratos Simfony para Simplicity.
+
+```bash
+# Clone o repositório
+git clone https://github.com/BlockstreamResearch/simfony.git
+cd simfony
+
+# Compile
+cargo build --release
+
+# Instale
+cp target/release/simc ~/.cargo/bin/
+# ou
+sudo cp target/release/simc /usr/local/bin/
+
+# Verifique
+simc
+# Output: Usage: simc PROGRAM_FILE
+```
+
+#### 2. hal-simplicity
+
+Ferramenta PSET para transações Simplicity na Liquid.
+
+```bash
+# Clone o fork com suporte completo
+git clone https://github.com/brunocapelao/hal-simplicity.git
+cd hal-simplicity
+
+# Compile
+cargo build --release
+
+# Instale
+cp target/release/hal-simplicity ~/.cargo/bin/
+# ou
+sudo cp target/release/hal-simplicity /usr/local/bin/
+
+# Verifique
+hal-simplicity --help
+```
+
+> **Nota**: Você precisa do Rust instalado. [Instale via rustup](https://rustup.rs/).
+
+---
+
+## Início Rápido
 
 ### Modo Simples (Legado)
 

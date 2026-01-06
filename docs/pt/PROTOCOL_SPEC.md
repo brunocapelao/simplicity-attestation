@@ -1,40 +1,40 @@
-# SAP - Simplicity Attestation Protocol
+# 📋 SAP - Simplicity Attestation Protocol
 
 ## Simplicity Attestation Protocol (SAP)
 
-**Version:** 1.0
-**Date:** 2026-01-05
-**Project:** Simplicity Attestation
+**Versão:** 1.0  
+**Data:** 2026-01-05  
+**Projeto:** Simplicity Attestation
 
 ---
 
-## 1. Overview
+## 1. Visão Geral
 
-The SAP protocol defines a standardized format for storing references to attestations (certificates) in OP_RETURN outputs of Liquid/Bitcoin transactions. The format allows indexers to quickly identify transactions related to the Simplicity Attestation system.
+O protocolo SAP define um formato padronizado para armazenar referências a atestações (certificados) em outputs OP_RETURN de transações Liquid/Bitcoin. O formato permite que indexadores identifiquem rapidamente transações relacionadas ao sistema Simplicity Attestation.
 
 ---
 
-## 2. OP_RETURN Format
+## 2. Formato do OP_RETURN
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          OP_RETURN STRUCTURE                                 │
+│                          ESTRUTURA DO OP_RETURN                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   ┌────────┬─────────┬──────────┬────────────────────────────────────────┐  │
 │   │  TAG   │ VERSION │  TYPE    │              PAYLOAD                    │  │
-│   │ 3 bytes│ 1 byte  │  1 byte  │           (variable)                    │  │
+│   │ 4 bytes│ 1 byte  │  1 byte  │           (variable)                    │  │
 │   └────────┴─────────┴──────────┴────────────────────────────────────────┘  │
 │                                                                              │
-│   Total: 5 bytes header + payload (CID)                                      │
-│   Maximum OP_RETURN: ~80 bytes → ~75 bytes for payload                       │
+│   Total: 6 bytes de header + payload (CID)                                   │
+│   Máximo OP_RETURN: ~80 bytes → ~74 bytes para payload                       │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.1 TAG (3 bytes)
+### 2.1 TAG (4 bytes)
 
-**Magic bytes** to identify the Simplicity Attestation protocol:
+**Magic bytes** para identificar o protocolo Simplicity Attestation:
 
 ```
 ASCII:  "SAP"
@@ -43,43 +43,43 @@ HEX:    0x534150
 
 ### 2.2 VERSION (1 byte)
 
-Protocol version for future compatibility:
+Versão do protocolo para compatibilidade futura:
 
-| Value | Meaning |
-|-------|---------|
-| `0x01` | Version 1.0 (current) |
-| `0x02-0xFF` | Reserved for future versions |
+| Valor | Significado |
+|-------|-------------|
+| `0x01` | Versão 1.0 (atual) |
+| `0x02-0xFF` | Reservado para futuras versões |
 
 ### 2.3 TYPE (1 byte)
 
-Operation/data type:
+Tipo de operação/dado:
 
-| Value | Type | Description |
-|-------|------|-------------|
-| `0x01` | ATTEST | Attestation issuance (CID in payload) |
-| `0x02` | REVOKE | Revocation (attestation TXID in payload) |
-| `0x03` | UPDATE | Metadata update (new CID) |
-| `0x10` | DELEGATE | Authority delegation |
-| `0x11` | UNDELEGATE | Delegation revocation |
-| `0xFF` | RESERVED | Reserved |
+| Valor | Tipo | Descrição |
+|-------|------|-----------|
+| `0x01` | ATTEST | Emissão de atestação (CID no payload) |
+| `0x02` | REVOKE | Revogação (TXID da atestação no payload) |
+| `0x03` | UPDATE | Atualização de metadados (novo CID) |
+| `0x10` | DELEGATE | Delegação de autoridade |
+| `0x11` | UNDELEGATE | Revogação de delegação |
+| `0xFF` | RESERVED | Reservado |
 
-### 2.4 PAYLOAD (variable)
+### 2.4 PAYLOAD (variável)
 
-Depends on TYPE:
+Depende do TYPE:
 
 | TYPE | Payload |
 |------|---------|
-| ATTEST | IPFS CID (46-59 bytes) |
+| ATTEST | CID IPFS (46-59 bytes) |
 | REVOKE | TXID:vout (34 bytes) |
-| UPDATE | IPFS CID (46-59 bytes) |
-| DELEGATE | Delegate pubkey (32 bytes) |
-| UNDELEGATE | Delegate pubkey (32 bytes) |
+| UPDATE | CID IPFS (46-59 bytes) |
+| DELEGATE | Pubkey do delegate (32 bytes) |
+| UNDELEGATE | Pubkey do delegate (32 bytes) |
 
 ---
 
-## 3. Examples
+## 3. Exemplos
 
-### 3.1 Attestation Issuance
+### 3.1 Emissão de Atestação
 
 ```
 OP_RETURN:
@@ -89,11 +89,11 @@ OP_RETURN:
 │ 534150     │ 01  │  01  │ (46 bytes - CIDv0 base58)                       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
 
-Complete HEX:
+HEX completo:
 534150 01 01 516d59774150...
 ```
 
-### 3.2 Attestation Revocation
+### 3.2 Revogação de Atestação
 
 ```
 OP_RETURN:
@@ -106,41 +106,41 @@ OP_RETURN:
 
 ---
 
-## 4. Indexer Algorithm
+## 4. Algoritmo do Indexador
 
 ```python
 def index_transaction(tx):
     for i, output in enumerate(tx.outputs):
         if not is_op_return(output):
             continue
-
+            
         data = output.script_data
-
-        # Check magic bytes
-        if len(data) < 5:
+        
+        # Verificar magic bytes
+        if len(data) < 6:
             continue
-        if data[0:3] != b'SAP':
+        if data[0:4] != b'SAP\x00':
             continue
-
+            
         # Parse header
-        version = data[3]
-        op_type = data[4]
-        payload = data[5:]
-
+        version = data[4]
+        op_type = data[5]
+        payload = data[6:]
+        
         if version != 0x01:
-            log(f"Unknown version: {version}")
+            log(f"Versão desconhecida: {version}")
             continue
-
-        # Process by type
+            
+        # Processar por tipo
         if op_type == 0x01:  # ATTEST
             cid = decode_cid(payload)
             index_attestation(tx.txid, i, cid)
-
+            
         elif op_type == 0x02:  # REVOKE
             ref_txid = payload[0:32]
             ref_vout = int.from_bytes(payload[32:34], 'big')
             mark_revoked(ref_txid, ref_vout)
-
+            
         elif op_type == 0x03:  # UPDATE
             cid = decode_cid(payload)
             update_attestation(tx.txid, i, cid)
@@ -148,77 +148,77 @@ def index_transaction(tx):
 
 ---
 
-## 5. Considerations
+## 5. Considerações
 
-### 5.1 Versioning
+### 5.1 Versionamento
 
-The VERSION field allows protocol evolution while maintaining compatibility:
-- Indexers should ignore versions they don't understand
-- New versions can add fields to the header
-- Payload structure can change between versions
+O campo VERSION permite evolução do protocolo mantendo compatibilidade:
+- Indexadores devem ignorar versões que não entendem
+- Novas versões podem adicionar campos ao header
+- Payload pode mudar de estrutura entre versões
 
-### 5.2 On-chain Validation
+### 5.2 Validação On-chain
 
-The Simplicity contract can optionally validate the prefix:
+O contrato Simplicity pode opcionalmente validar o prefixo:
 
 ```rust
-// Verify that OP_RETURN starts with "SAP"
+// Verificar que o OP_RETURN começa com "SAP"
 let maybe_datum = jet::output_null_datum(2, 0);
-// Extract first 3 bytes and compare with 0x534150
+// Extrair primeiros 4 bytes e comparar com 0x53414944
 ```
 
-### 5.3 Size
+### 5.3 Tamanho
 
-| Component | Size | Cumulative |
-|-----------|------|------------|
+| Componente | Tamanho | Acumulado |
+|------------|---------|-----------|
 | OP_RETURN max | 80 bytes | - |
 | TAG (SAP) | 3 bytes | 3 |
-| VERSION | 1 byte | 4 |
-| TYPE | 1 byte | 5 |
-| CIDv0 | 46 bytes | 51 |
-| **Remaining** | 29 bytes | - |
+| VERSION | 1 byte | 5 |
+| TYPE | 1 byte | 6 |
+| CIDv0 | 46 bytes | 52 |
+| **Sobra** | 28 bytes | - |
 
-For CIDv1 (longer), it still fits comfortably.
-
----
-
-## 6. Type Registry
-
-### Types Reserved for Expansion
-
-| Range | Usage |
-|-------|-------|
-| `0x01-0x0F` | Attestation operations |
-| `0x10-0x1F` | Delegation operations |
-| `0x20-0x2F` | Metadata and extensions |
-| `0x30-0xEF` | Reserved for future |
-| `0xF0-0xFE` | Private/experimental use |
-| `0xFF` | Reserved (do not use) |
+Para CIDv1 (mais longo), ainda cabe confortavelmente.
 
 ---
 
-## 7. Reference Implementation
+## 6. Registro de Tipos
+
+### Tipos Reservados para Expansão
+
+| Range | Uso |
+|-------|-----|
+| `0x01-0x0F` | Operações de atestação |
+| `0x10-0x1F` | Operações de delegação |
+| `0x20-0x2F` | Metadados e extensões |
+| `0x30-0xEF` | Reservado para futuro |
+| `0xF0-0xFE` | Uso privado/experimental |
+| `0xFF` | Reservado (não usar) |
+
+---
+
+## 7. Implementação de Referência
 
 ### Encoder (Python)
 
 ```python
 def encode_sap_attest(cid: str) -> bytes:
-    """Encodes an attestation issuance OP_RETURN."""
+    """Codifica um OP_RETURN de emissão de atestação."""
     tag = b'SAP'
     version = bytes([0x01])
     op_type = bytes([0x01])  # ATTEST
     payload = cid.encode('utf-8')
-
+    
     return tag + version + op_type + payload
 
 
 def encode_sap_revoke(txid: bytes, vout: int) -> bytes:
-    """Encodes a revocation OP_RETURN."""
+    """Codifica um OP_RETURN de revogação."""
     tag = b'SAP'
     version = bytes([0x01])
     op_type = bytes([0x02])  # REVOKE
     payload = txid + vout.to_bytes(2, 'big')
-
+    
     return tag + version + op_type + payload
 ```
 
@@ -238,7 +238,7 @@ class SAPRevoke:
     vout: int
 
 def decode_sap(data: bytes) -> Optional[Union[SAPAttest, SAPRevoke]]:
-    """Decodes a SAP OP_RETURN."""
+    """Decodifica um OP_RETURN SAP."""
     if len(data) < 5:
         return None
     if data[0:3] != b'SAP':
@@ -255,10 +255,14 @@ def decode_sap(data: bytes) -> Optional[Union[SAPAttest, SAPRevoke]]:
         return SAPAttest(cid=payload.decode('utf-8'))
     elif op_type == 0x02:  # REVOKE
         return SAPRevoke(txid=payload[0:32], vout=int.from_bytes(payload[32:34], 'big'))
-
+    
     return None
 ```
 
 ---
 
 *Simplicity Attestation Protocol (SAP) - Specification v1.0*
+
+---
+
+[English Version](PROTOCOL_SPEC_EN.md)

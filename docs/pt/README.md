@@ -1,8 +1,8 @@
 # SAP - Simplicity Attestation Protocol
 
-On-chain certificate system with hierarchical delegation using Simplicity on Liquid Network.
+Sistema de certificados on-chain com delegacao hierarquica usando Simplicity na Liquid Network.
 
-## Architecture
+## Arquitetura
 
 ```
                     ┌─────────────────────────────────────┐
@@ -20,25 +20,25 @@ On-chain certificate system with hierarchical delegation using Simplicity on Liq
    └─────────┘              └─────────────────┘          └─────────────────┘
         │                            │                            │
         ▼                            ▼                            ▼
-   Free spend              ┌─────────────────────────────────────┐
-   (deactivate             │         COVENANT ENFORCEMENT        │
-    delegate)              │  Output 0: Change → Vault (self-ref)│
-                           │  Output 1: Cert → Certificate addr  │
-                           │  Output 2: OP_RETURN with data      │
-                           │  Output 3: Fee                      │
-                           └─────────────────────────────────────┘
-                                            │
-                                            ▼
-                           ┌─────────────────────────────────────┐
-                           │         CERTIFICATE UTXO            │
-                           │   tex1pfeaa7eex2cxa9...8cvkka       │
-                           │                                     │
-                           │   Existence = Valid certificate     │
-                           │   Spent = Revoked certificate       │
-                           └─────────────────────────────────────┘
+   Gasto livre              ┌─────────────────────────────────────┐
+   (desativar               │         COVENANT ENFORCEMENT        │
+    delegado)               │  Output 0: Troco → Vault (self-ref) │
+                            │  Output 1: Cert → Certificate addr  │
+                            │  Output 2: OP_RETURN com dados      │
+                            │  Output 3: Fee                      │
+                            └─────────────────────────────────────┘
+                                             │
+                                             ▼
+                            ┌─────────────────────────────────────┐
+                            │         CERTIFICATE UTXO            │
+                            │   tex1pfeaa7eex2cxa9...8cvkka       │
+                            │                                     │
+                            │   Existencia = Certificado valido   │
+                            │   Gasto = Certificado revogado      │
+                            └─────────────────────────────────────┘
 ```
 
-## Structure
+## Estrutura
 
 ```
 contracts/
@@ -46,47 +46,45 @@ contracts/
 └── certificate.simf        # Certificate UTXO script
 
 tests/
-├── test_emit.py            # Issue certificate (Admin or Delegate)
+├── test_emit.py            # Emitir certificado (Admin ou Delegate)
 ├── test_certificate_revoke.py
-└── test_edge_cases.py      # Security tests
+└── test_edge_cases.py      # Testes de seguranca
 
 docs/
-├── DOCUMENTATION.md        # Full documentation (English)
-├── DOCUMENTACAO.md         # Full documentation (Portuguese)
-├── PROTOCOL_SPEC_EN.md     # SAP specification (English)
-└── PROTOCOL_SPEC.md        # SAP specification (Portuguese)
+├── PROTOCOL_SPEC.md        # Especificacao SAP
+└── DOCUMENTACAO.md         # Documentacao completa
 
-secrets.json                # Keys and addresses (testnet)
+secrets.json                # Chaves e enderecos (testnet)
 ```
 
 ## Spending Paths
 
-| Path | Witness Encoding | Usage |
-|------|------------------|-------|
-| Left | `0` + sig + 7 pad | Admin drains vault (deactivate delegate) |
-| Right-Left | `10` + sig + 6 pad | Admin issues certificate |
-| Right-Right | `11` + sig + 6 pad | Delegate issues certificate |
+| Path | Witness Encoding | Uso |
+|------|------------------|-----|
+| Left | `0` + sig + 7 pad | Admin drena vault (desativar delegado) |
+| Right-Left | `10` + sig + 6 pad | Admin emite certificado |
+| Right-Right | `11` + sig + 6 pad | Delegate emite certificado |
 
-## Usage
+## Uso
 
-### Issue Certificate
+### Emitir Certificado
 ```bash
 cd tests
-python test_emit.py --admin-issue          # Admin issues certificate
-python test_emit.py --delegate-issue       # Delegate issues certificate
-python test_emit.py --admin-unconditional  # Admin drains vault (deactivate delegate)
+python test_emit.py --admin-issue          # Admin emite certificado
+python test_emit.py --delegate-issue       # Delegate emite certificado
+python test_emit.py --admin-unconditional  # Admin drena vault (desativar delegado)
 ```
 
-### Revoke Certificate
+### Revogar Certificado
 ```bash
 python test_certificate_revoke.py --admin
 python test_certificate_revoke.py --delegate
 ```
 
-## Tools
+## Ferramentas
 
 ```bash
-# hal-simplicity (fork with fixes)
+# hal-simplicity (fork com correcoes)
 git clone https://github.com/brunocapelao/hal-simplicity-fork.git
 cd hal-simplicity-fork && cargo build --release
 
@@ -98,7 +96,7 @@ cd simfony && cargo build --release
 pip install embit requests
 ```
 
-## SAP Protocol
+## Protocolo SAP
 
 ```
 OP_RETURN:
@@ -108,15 +106,15 @@ OP_RETURN:
 └───────┴─────────┴──────┴──────────────────────────┘
 ```
 
-## Keys (Testnet)
+## Chaves (Testnet)
 
-| Role | Public Key |
-|------|------------|
+| Papel | Public Key |
+|-------|------------|
 | Admin (Alice) | `bcc13efe...ad45` |
 | Delegate (Bob) | `8577f4e0...6413` |
 
-Full keys in `secrets.json`.
+Chaves completas em `secrets.json`.
 
 ---
 
-[Documentação em Português](README.md)
+[English Version](README_EN.md)

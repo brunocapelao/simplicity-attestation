@@ -286,11 +286,11 @@ def emit_certificate_for_test(vault_utxo):
 
     FEE_SATS = 500
     CERT_SATS = 546
-    troco_sats = utxo_value - FEE_SATS - CERT_SATS
+    change_sats_emit = utxo_value - FEE_SATS - CERT_SATS
 
     inputs_json = json.dumps([{"txid": utxo_txid, "vout": utxo_vout}])
     outputs_json = json.dumps([
-        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
+        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats_emit))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
         {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
@@ -363,7 +363,7 @@ def main():
 
     FEE_SATS = 500
     CERT_SATS = 546
-    troco_sats = utxo_value - FEE_SATS - CERT_SATS
+    change_sats = utxo_value - FEE_SATS - CERT_SATS
 
     results = []
 
@@ -372,7 +372,7 @@ def main():
     # =========================================================================
     inputs_json = json.dumps([{"txid": utxo_txid, "vout": utxo_vout}])
     outputs_json = json.dumps([
-        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
+        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
         {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
@@ -390,7 +390,7 @@ def main():
     # TEST 2: Vault spend with WRONG NUMBER OF OUTPUTS (3 instead of 4)
     # =========================================================================
     outputs_json_3 = json.dumps([
-        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats + CERT_SATS))},
+        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats + CERT_SATS))},
         {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
@@ -407,7 +407,7 @@ def main():
     # TEST 3: Vault spend with WRONG CERTIFICATE DESTINATION
     # =========================================================================
     outputs_json_wrong_dest = json.dumps([
-        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
+        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats))},
         {"address": WRONG_CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
         {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
@@ -425,7 +425,7 @@ def main():
     # TEST 4: Vault spend WITHOUT OP_RETURN
     # =========================================================================
     outputs_json_no_opreturn = json.dumps([
-        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
+        {"address": VAULT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(100))},  # Extra output instead of OP_RETURN
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS - 100))}
@@ -440,22 +440,22 @@ def main():
     results.append(("Missing OP_RETURN", result))
 
     # =========================================================================
-    # TEST 5: Vault spend with WRONG TROCO DESTINATION (not self-reference)
+    # TEST 5: Vault spend with WRONG CHANGE DESTINATION (not self-reference)
     # =========================================================================
-    outputs_json_wrong_troco = json.dumps([
-        {"address": WRONG_CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},  # Wrong troco!
+    outputs_json_wrong_change = json.dumps([
+        {"address": WRONG_CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats))},  # Wrong change!
         {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
         {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
         {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}
     ])
 
     result = test_vault_verification(
-        "Vault spend with WRONG TROCO DESTINATION (breaks self-reference)",
-        inputs_json, outputs_json_wrong_troco, utxo_value,
+        "Vault spend with WRONG CHANGE DESTINATION (breaks self-reference)",
+        inputs_json, outputs_json_wrong_change, utxo_value,
         DELEGATE_SECRET,
         expect_success=False
     )
-    results.append(("Wrong troco destination", result))
+    results.append(("Wrong change destination", result))
 
     # =========================================================================
     # TEST 6: Correct vault spend (should SUCCEED) + Emit certificate

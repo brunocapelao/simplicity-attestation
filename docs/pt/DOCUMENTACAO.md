@@ -503,16 +503,21 @@ disconnect(committed_expr, disconnected_expr_cmr)
 ### 8.2 Arquivos do Sistema
 
 ```
-v2/
-├── DOCUMENTACAO.md              # Esta especificacao
-├── vault_v2.simf                # Delegation Vault com covenants
-├── certificate.simf             # Certificate script
-├── scripts/
-│   ├── setup_system.py          # Setup inicial (compilar, gerar enderecos)
-│   ├── emit_certificate.py      # Emissao de certificado
-│   ├── revoke_certificate.py    # Revogacao de certificado
-│   └── deactivate_delegate.py   # Desativacao de delegado
-└── secrets.json                 # Chaves e enderecos (testnet)
+contracts/
+├── vault.simf              # Delegation Vault com covenants
+└── certificate.simf        # Certificate script
+
+tests/
+├── test_emit.py            # Teste de emissao de certificado
+├── test_certificate_revoke.py  # Teste de revogacao
+└── test_edge_cases.py      # Testes de seguranca
+
+docs/
+├── DOCUMENTATION.md        # Esta especificacao (Ingles)
+├── DOCUMENTACAO.md         # Esta especificacao (Portugues)
+└── PROTOCOL_SPEC.md        # Especificacao do protocolo SAP
+
+secrets.json                # Chaves e enderecos (testnet)
 ```
 
 ### 8.3 Pseudo-codigo Simfony
@@ -687,4 +692,8 @@ Response:
 
 ---
 
-*SA Protocol - Simplicity Attestation*
+*SAP - Simplicity Attestation Protocol - Especificacao v2.0*
+
+---
+
+[English Version](DOCUMENTATION.md)

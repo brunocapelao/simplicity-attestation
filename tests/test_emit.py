@@ -205,21 +205,21 @@ def main():
     if needs_covenants:
         # Certificate emission - 4 outputs required
         CERT_SATS = 546
-        troco_sats = utxo_value - FEE_SATS - CERT_SATS
+        change_sats = utxo_value - FEE_SATS - CERT_SATS
 
-        if troco_sats < 546:
+        if change_sats < 546:
             print("ERROR: UTXO value too small for certificate emission")
             return
 
         print("=== Output Plan (Certificate Emission) ===")
-        print(f"  Output 0 (Troco to Vault): {troco_sats} sats")
+        print(f"  Output 0 (Change to Vault): {change_sats} sats")
         print(f"  Output 1 (Certificate):   {CERT_SATS} sats")
         print(f"  Output 2 (OP_RETURN):     0 sats")
         print(f"  Output 3 (Fee):           {FEE_SATS} sats")
 
         inputs_json = json.dumps([{"txid": utxo_txid, "vout": utxo_vout}])
         outputs_json = json.dumps([
-            {"address": VAULT_V3_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(troco_sats))},
+            {"address": VAULT_V3_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(change_sats))},
             {"address": CERT_ADDRESS, "asset": ASSET, "amount": float(sats_to_btc(CERT_SATS))},
             {"address": f"data:{SAP_PAYLOAD}", "asset": ASSET, "amount": 0},
             {"address": "fee", "asset": ASSET, "amount": float(sats_to_btc(FEE_SATS))}

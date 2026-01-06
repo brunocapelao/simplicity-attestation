@@ -1,15 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
 // SAP - Certificate Contract
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
 //
-// A EXISTENCIA deste UTXO representa um certificado VALIDO.
-// GASTAR este UTXO = REVOGAR o certificado.
+// The EXISTENCE of this UTXO represents a VALID certificate.
+// SPENDING this UTXO = REVOKING the certificate.
 //
-// QUEM PODE REVOGAR:
+// WHO CAN REVOKE:
 // - Admin (Alice): Left path
 // - Delegate (Bob): Right path
 //
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
 
 fn checksig(pk: Pubkey, sig: Signature) {
     let msg: u256 = jet::sig_all_hash();

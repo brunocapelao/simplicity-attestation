@@ -64,7 +64,10 @@ from .events import EventEmitter, EventType, Event
 # Logging
 from .logging import StructuredLogger, LogLevel, create_file_logger
 
-__version__ = "0.3.0"
+# Vault creation and funding
+from .vault import VaultBuilder, VaultFunder, VaultSetup
+
+__version__ = "0.4.0"
 __all__ = [
     # Core
     "SAPClient",
@@ -76,6 +79,11 @@ __all__ = [
     "TransactionResult",
     "UTXO",
     "CertificateStatus",
+    
+    # Vault Creation
+    "VaultBuilder",
+    "VaultFunder",
+    "VaultSetup",
     
     # Key Providers
     "KeyProvider",
@@ -125,4 +133,3 @@ __all__ = [
     "LogLevel",
     "create_file_logger",
 ]
-

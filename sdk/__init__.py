@@ -3,16 +3,36 @@ SAP SDK - Simplicity Attestation Protocol SDK
 
 A Python SDK to simplify operations with the SAP system on Liquid Network.
 
-Usage:
-    from sap_sdk import SAPClient
+Usage (legacy - with secrets.json):
+    from sdk import SAPClient
     
     client = SAPClient.from_config("secrets.json")
+    cert = client.issue_certificate(cid="Qm...")
+
+Usage (recommended - with KeyProvider):
+    from sdk import SAPClient, NetworkConfig, EnvKeyProvider, Role
+    
+    config = NetworkConfig.from_file("network_config.json")
+    provider = EnvKeyProvider("SAP_PRIVATE_KEY")
+    
+    client = SAPClient.create(config, provider, Role.DELEGATE)
     cert = client.issue_certificate(cid="Qm...")
 """
 
 from .client import SAPClient
-from .config import SAPConfig
+from .config import SAPConfig, NetworkConfig, ContractInfo
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
+
+# Key providers
+from .providers import (
+    KeyProvider,
+    EnvKeyProvider,
+    MemoryKeyProvider,
+    FileKeyProvider,
+)
+
+# Roles and permissions
+from .roles import Role, RoleContext, Permissions, PermissionError
 
 # Error types
 from .errors import (
@@ -44,16 +64,30 @@ from .events import EventEmitter, EventType, Event
 # Logging
 from .logging import StructuredLogger, LogLevel, create_file_logger
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     # Core
     "SAPClient",
     "SAPConfig",
+    "NetworkConfig",
+    "ContractInfo",
     "Certificate",
     "Vault",
     "TransactionResult",
     "UTXO",
     "CertificateStatus",
+    
+    # Key Providers
+    "KeyProvider",
+    "EnvKeyProvider",
+    "MemoryKeyProvider",
+    "FileKeyProvider",
+    
+    # Roles
+    "Role",
+    "RoleContext",
+    "Permissions",
+    "PermissionError",
     
     # Errors
     "SAPError",
@@ -91,3 +125,4 @@ __all__ = [
     "LogLevel",
     "create_file_logger",
 ]
+

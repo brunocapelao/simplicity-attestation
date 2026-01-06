@@ -30,6 +30,10 @@ from .errors import (
     CertificateAlreadyRevokedError,
 )
 
+# External signature support
+from .prepared import PreparedTransaction, TransactionType, SignedTransaction
+from .providers import KeyProvider
+
 
 class SAPClient:
     """
@@ -364,6 +368,233 @@ class SAPClient:
                 certificates.append(cert)
         
         return certificates
+    
+    # =========================================================================
+    # External Signature Operations (prepare/finalize pattern)
+    # =========================================================================
+    
+    def prepare_issue_certificate(
+        self,
+        cid: str,
+        issuer: Literal["admin", "delegate"] = "delegate"
+    ) -> PreparedTransaction:
+        """
+        Prepare a certificate issuance for external signing.
+        
+        Use this when signatures come from external sources like:
+        - Multisig ceremonies
+        - Hardware wallets
+        - Approval workflows
+        
+        Args:
+            cid: IPFS CID or content hash to embed.
+            issuer: "admin" or "delegate".
+        
+        Returns:
+            PreparedTransaction with sig_hash to sign externally.
+        
+        Example:
+            prepared = client.prepare_issue_certificate(cid="Qm...")
+            signature = external_signer.sign(prepared.sig_hash_bytes)
+            result = client.finalize_transaction(prepared, signature)
+        """
+        vault = self.get_vault()
+        if not vault.can_issue:
+            raise InsufficientFundsError(
+                required=1046,
+                available=vault.balance,
+                message=f"Vault has insufficient funds for issuance"
+            )
+        
+        if not vault.available_utxo:
+            raise VaultEmptyError(vault.address)
+        
+        # Get required pubkey for verification
+        key_info = self.config.get_key(issuer)
+        
+        # Build transaction and get sig_hash
+        prepared_data = self.transaction_builder.prepare_issue_certificate(
+            vault_utxo=vault.available_utxo,
+            cid=cid,
+            issuer=issuer
+        )
+        
+        return PreparedTransaction(
+            tx_type=TransactionType.ISSUE_CERTIFICATE,
+            sig_hash=prepared_data["sig_hash"],
+            signer_role=issuer,
+            required_pubkey=key_info.public_key,
+            pset=prepared_data["pset"],
+            input_index=prepared_data["input_index"],
+            program=prepared_data["program"],
+            witness_template=prepared_data["witness_template"],
+            details={
+                "cid": cid,
+                "vault_utxo": f"{vault.available_utxo.txid}:{vault.available_utxo.vout}",
+                "vault_balance": vault.balance,
+            }
+        )
+    
+    def prepare_revoke_certificate(
+        self,
+        txid: str,
+        vout: int = 1,
+        revoker: Literal["admin", "delegate"] = "admin",
+        recipient: Optional[str] = None
+    ) -> PreparedTransaction:
+        """
+        Prepare a certificate revocation for external signing.
+        
+        Args:
+            txid: Transaction ID of the certificate.
+            vout: Output index.
+            revoker: "admin" or "delegate".
+            recipient: Where to send funds.
+        
+        Returns:
+            PreparedTransaction with sig_hash to sign externally.
+        """
+        # Find certificate UTXO
+        cert_utxos = self.api.get_utxos(self.contracts.certificate.address)
+        cert_utxo = None
+        for utxo in cert_utxos:
+            if utxo.txid == txid and utxo.vout == vout:
+                cert_utxo = utxo
+                break
+        
+        if not cert_utxo:
+            raise CertificateNotFoundError(txid, vout)
+        
+        key_info = self.config.get_key(revoker)
+        
+        prepared_data = self.transaction_builder.prepare_revoke_certificate(
+            cert_utxo=cert_utxo,
+            revoker=revoker,
+            recipient=recipient
+        )
+        
+        return PreparedTransaction(
+            tx_type=TransactionType.REVOKE_CERTIFICATE,
+            sig_hash=prepared_data["sig_hash"],
+            signer_role=revoker,
+            required_pubkey=key_info.public_key,
+            pset=prepared_data["pset"],
+            input_index=prepared_data["input_index"],
+            program=prepared_data["program"],
+            witness_template=prepared_data["witness_template"],
+            details={
+                "certificate": f"{txid}:{vout}",
+                "recipient": recipient or "(burn as fee)",
+            }
+        )
+    
+    def prepare_drain_vault(
+        self,
+        recipient: str
+    ) -> PreparedTransaction:
+        """
+        Prepare a vault drain for external signing (admin only).
+        
+        Args:
+            recipient: Address to send funds to.
+        
+        Returns:
+            PreparedTransaction with sig_hash to sign externally.
+        """
+        vault = self.get_vault()
+        if not vault.available_utxo:
+            raise VaultEmptyError(vault.address)
+        
+        key_info = self.config.get_key("admin")
+        
+        prepared_data = self.transaction_builder.prepare_drain_vault(
+            vault_utxo=vault.available_utxo,
+            recipient=recipient
+        )
+        
+        return PreparedTransaction(
+            tx_type=TransactionType.DRAIN_VAULT,
+            sig_hash=prepared_data["sig_hash"],
+            signer_role="admin",
+            required_pubkey=key_info.public_key,
+            pset=prepared_data["pset"],
+            input_index=prepared_data["input_index"],
+            program=prepared_data["program"],
+            witness_template=prepared_data["witness_template"],
+            details={
+                "vault_balance": vault.balance,
+                "recipient": recipient,
+            }
+        )
+    
+    def finalize_transaction(
+        self,
+        prepared: PreparedTransaction,
+        signature: bytes,
+        broadcast: bool = True
+    ) -> TransactionResult:
+        """
+        Finalize a prepared transaction with an external signature.
+        
+        Args:
+            prepared: PreparedTransaction from prepare_* methods.
+            signature: 64-byte Schnorr signature.
+            broadcast: Whether to broadcast immediately.
+        
+        Returns:
+            TransactionResult with txid or error.
+        
+        Example:
+            prepared = client.prepare_issue_certificate(cid)
+            signature = hardware_wallet.sign(prepared.sig_hash_bytes)
+            result = client.finalize_transaction(prepared, signature)
+        """
+        # Validate signature format
+        if len(signature) != 64:
+            return TransactionResult(
+                success=False,
+                error=f"Invalid signature length: expected 64 bytes, got {len(signature)}"
+            )
+        
+        # Check expiration
+        if prepared.is_expired:
+            return TransactionResult(
+                success=False,
+                error="Prepared transaction has expired"
+            )
+        
+        # Emit event
+        if self.events:
+            self.events.emit(EventType.BEFORE_SIGN, {
+                "tx_type": prepared.tx_type.value,
+                "sig_hash": prepared.sig_hash,
+            })
+        
+        # Finalize transaction
+        result = self.transaction_builder.finalize_with_signature(
+            pset=prepared.pset,
+            input_index=prepared.input_index,
+            program=prepared.program,
+            witness_template=prepared.witness_template,
+            signature=signature,
+            issuer=prepared.signer_role,
+            broadcast=broadcast
+        )
+        
+        # Emit after event
+        if self.events and result.success:
+            event_type = {
+                TransactionType.ISSUE_CERTIFICATE: EventType.AFTER_ISSUE,
+                TransactionType.REVOKE_CERTIFICATE: EventType.AFTER_REVOKE,
+                TransactionType.DRAIN_VAULT: EventType.AFTER_DRAIN,
+            }.get(prepared.tx_type, EventType.AFTER_BROADCAST)
+            
+            self.events.emit(event_type, {
+                "txid": result.txid,
+                "tx_type": prepared.tx_type.value,
+            })
+        
+        return result
     
     # =========================================================================
     # Confirmation Operations

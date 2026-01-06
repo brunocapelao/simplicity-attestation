@@ -23,6 +23,9 @@ from .client import SAPClient
 from .config import SAPConfig, NetworkConfig, ContractInfo
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
 
+# External signature support
+from .prepared import PreparedTransaction, TransactionType, SignedTransaction
+
 # Key providers
 from .providers import (
     KeyProvider,
@@ -67,7 +70,7 @@ from .logging import StructuredLogger, LogLevel, create_file_logger
 # Vault creation and funding
 from .vault import VaultBuilder, VaultFunder, VaultSetup
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __all__ = [
     # Core
     "SAPClient",
@@ -79,6 +82,11 @@ __all__ = [
     "TransactionResult",
     "UTXO",
     "CertificateStatus",
+    
+    # External Signature
+    "PreparedTransaction",
+    "TransactionType",
+    "SignedTransaction",
     
     # Vault Creation
     "VaultBuilder",

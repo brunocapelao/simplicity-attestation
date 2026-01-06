@@ -6,7 +6,8 @@ This is the primary entry point for SDK users.
 """
 
 from pathlib import Path
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Callable
+import logging
 
 from .config import SAPConfig
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
@@ -16,6 +17,18 @@ from .core.contracts import ContractRegistry
 from .infra.hal import HalSimplicity
 from .infra.api import BlockstreamAPI
 from .protocols.sap import SAPProtocol
+
+# New production features
+from .confirmation import ConfirmationTracker, ConfirmationStatus, TxStatus
+from .fees import FeeEstimator, FeePriority, FeeEstimate
+from .events import EventEmitter, EventType, Event
+from .logging import StructuredLogger
+from .errors import (
+    VaultEmptyError,
+    InsufficientFundsError,
+    CertificateNotFoundError,
+    CertificateAlreadyRevokedError,
+)
 
 
 class SAPClient:
@@ -40,13 +53,23 @@ class SAPClient:
         
         # Revoke a certificate
         client.revoke_certificate(cert.txid, cert.vout)
+        
+        # Wait for confirmation
+        status = client.wait_for_confirmation(cert.txid)
+        
+        # Use event hooks
+        @client.events.on(EventType.AFTER_ISSUE)
+        def on_issue(event):
+            print(f"Issued: {event.data['txid']}")
     """
     
     def __init__(
         self,
         config: SAPConfig,
         hal: Optional[HalSimplicity] = None,
-        api: Optional[BlockstreamAPI] = None
+        api: Optional[BlockstreamAPI] = None,
+        logger: Optional[logging.Logger] = None,
+        enable_events: bool = True
     ):
         """
         Initialize SAP client.
@@ -55,6 +78,8 @@ class SAPClient:
             config: SAP configuration.
             hal: Optional HalSimplicity instance.
             api: Optional BlockstreamAPI instance.
+            logger: Optional Python logger for structured logging.
+            enable_events: Whether to enable event hooks (default: True).
         """
         self.config = config
         
@@ -79,6 +104,12 @@ class SAPClient:
         
         # Protocol handlers
         self.sap_protocol = SAPProtocol
+        
+        # New production features
+        self.confirmations = ConfirmationTracker(self.api)
+        self.fees = FeeEstimator(self.api)
+        self.events = EventEmitter(logger) if enable_events else None
+        self.logger = StructuredLogger(logger=logger) if logger else None
     
     @classmethod
     def from_config(cls, config_path: str) -> "SAPClient":
@@ -333,3 +364,116 @@ class SAPClient:
                 certificates.append(cert)
         
         return certificates
+    
+    # =========================================================================
+    # Confirmation Operations
+    # =========================================================================
+    
+    def wait_for_confirmation(
+        self,
+        txid: str,
+        target_confirmations: int = 1,
+        timeout: int = 600
+    ) -> ConfirmationStatus:
+        """
+        Wait for a transaction to be confirmed.
+        
+        Args:
+            txid: Transaction ID to wait for.
+            target_confirmations: Number of confirmations to wait for.
+            timeout: Maximum seconds to wait (default: 600).
+        
+        Returns:
+            ConfirmationStatus when target reached.
+        
+        Raises:
+            ConfirmationTimeoutError: If timeout exceeded.
+        """
+        return self.confirmations.wait_for_confirmation(
+            txid=txid,
+            target_confirmations=target_confirmations,
+            timeout=timeout
+        )
+    
+    def get_confirmation_status(self, txid: str) -> ConfirmationStatus:
+        """
+        Get current confirmation status of a transaction.
+        
+        Args:
+            txid: Transaction ID.
+        
+        Returns:
+            ConfirmationStatus with current state.
+        """
+        return self.confirmations.get_status(txid)
+    
+    def on_confirmation(
+        self,
+        txid: str,
+        callback: Callable[[ConfirmationStatus], None],
+        target_confirmations: int = 1
+    ) -> None:
+        """
+        Register callback for when transaction reaches confirmations.
+        
+        Args:
+            txid: Transaction ID to track.
+            callback: Function to call when confirmed.
+            target_confirmations: Confirmations needed to trigger.
+        """
+        self.confirmations.on_confirmation(txid, callback, target_confirmations)
+    
+    # =========================================================================
+    # Fee Estimation
+    # =========================================================================
+    
+    def estimate_fee(
+        self,
+        operation: str = "issue_certificate",
+        priority: FeePriority = FeePriority.MEDIUM
+    ) -> FeeEstimate:
+        """
+        Estimate fee for an operation.
+        
+        Args:
+            operation: Type of operation (issue_certificate, revoke_certificate, etc).
+            priority: Fee priority level (LOW, MEDIUM, HIGH, URGENT).
+        
+        Returns:
+            FeeEstimate with recommended fee.
+        """
+        return self.fees.estimate(operation=operation, priority=priority)
+    
+    # =========================================================================
+    # Event Hooks
+    # =========================================================================
+    
+    def on(self, event_type: EventType) -> Callable:
+        """
+        Decorator to register an event handler.
+        
+        Args:
+            event_type: Type of event to handle.
+        
+        Returns:
+            Decorator function.
+        
+        Example:
+            @client.on(EventType.AFTER_ISSUE)
+            def handle_issue(event):
+                print(f"Certificate issued: {event.data['txid']}")
+        """
+        if self.events:
+            return self.events.on(event_type)
+        return lambda f: f  # No-op if events disabled
+    
+    def emit(self, event_type: EventType, data: dict = None) -> None:
+        """
+        Emit an event to all registered handlers.
+        
+        Args:
+            event_type: Type of event.
+            data: Event payload data.
+        """
+        if self.events:
+            self.events.emit(event_type, data)

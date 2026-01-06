@@ -12,14 +12,82 @@ Usage:
 
 from .client import SAPClient
 from .config import SAPConfig
-from .models import Certificate, Vault, TransactionResult, UTXO
+from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
 
-__version__ = "0.1.0"
+# Error types
+from .errors import (
+    SAPError,
+    ConfigurationError,
+    TransactionError,
+    InsufficientFundsError,
+    BroadcastError,
+    ConfirmationTimeoutError,
+    CertificateError,
+    CertificateNotFoundError,
+    CertificateAlreadyRevokedError,
+    VaultError,
+    VaultEmptyError,
+    NetworkError,
+    PayloadTooLargeError,
+    HalSimplicityError,
+)
+
+# Confirmation tracking
+from .confirmation import ConfirmationTracker, ConfirmationStatus, TxStatus
+
+# Fee estimation
+from .fees import FeeEstimator, FeeEstimate, FeePriority
+
+# Event hooks
+from .events import EventEmitter, EventType, Event
+
+# Logging
+from .logging import StructuredLogger, LogLevel, create_file_logger
+
+__version__ = "0.2.0"
 __all__ = [
+    # Core
     "SAPClient",
-    "SAPConfig", 
+    "SAPConfig",
     "Certificate",
     "Vault",
     "TransactionResult",
     "UTXO",
+    "CertificateStatus",
+    
+    # Errors
+    "SAPError",
+    "ConfigurationError",
+    "TransactionError",
+    "InsufficientFundsError",
+    "BroadcastError",
+    "ConfirmationTimeoutError",
+    "CertificateError",
+    "CertificateNotFoundError",
+    "CertificateAlreadyRevokedError",
+    "VaultError",
+    "VaultEmptyError",
+    "NetworkError",
+    "PayloadTooLargeError",
+    "HalSimplicityError",
+    
+    # Confirmation
+    "ConfirmationTracker",
+    "ConfirmationStatus",
+    "TxStatus",
+    
+    # Fees
+    "FeeEstimator",
+    "FeeEstimate",
+    "FeePriority",
+    
+    # Events
+    "EventEmitter",
+    "EventType",
+    "Event",
+    
+    # Logging
+    "StructuredLogger",
+    "LogLevel",
+    "create_file_logger",
 ]

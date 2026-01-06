@@ -1,6 +1,0 @@
-{
-    "ADMIN_OR_DELEGATE": {
-        "value": "Left(0xc4c449b8029cb0bbf01d4e35898bcfe29ab1aa948f4babb2fd06ab568672a99a2ff816b40a8e4fe97e80be405072c5d793d0bc7992b12e237ceb1a90a55510b4)",
-        "type": "Either<Signature, Signature>"
-    }
-}

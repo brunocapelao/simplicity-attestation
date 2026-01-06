@@ -3,22 +3,41 @@ SAP SDK - Simplicity Attestation Protocol SDK
 
 A Python SDK to simplify operations with the SAP system on Liquid Network.
 
-Usage (legacy - with secrets.json):
-    from sdk import SAPClient
+Usage (Recommended - Full Abstraction):
+    from sdk import SAP
     
-    client = SAPClient.from_config("secrets.json")
-    cert = client.issue_certificate(cid="Qm...")
+    # Just provide your keys - SDK handles everything
+    sap = SAP(
+        admin_private_key="abc123...",
+        delegate_private_key="def456...",
+        network="testnet"
+    )
+    
+    print(f"Fund vault: {sap.vault_address}")
+    result = sap.issue_certificate(cid="QmYwAPJzv5...")
+    sap.revoke_certificate(result.txid, 1)
 
-Usage (recommended - with KeyProvider):
-    from sdk import SAPClient, NetworkConfig, EnvKeyProvider, Role
+Usage (External Signing - multisig/hardware wallets):
+    sap = SAP(
+        admin_pubkey="abc123...",
+        delegate_pubkey="def456...",
+        signer=my_hardware_wallet,
+        network="testnet"
+    )
     
-    config = NetworkConfig.from_file("network_config.json")
-    provider = EnvKeyProvider("SAP_PRIVATE_KEY")
-    
-    client = SAPClient.create(config, provider, Role.DELEGATE)
-    cert = client.issue_certificate(cid="Qm...")
+    prepared = sap.prepare_issue_certificate(cid="Qm...")
+    signature = my_hardware_wallet.sign(prepared.sig_hash)
+    result = sap.finalize_transaction(prepared, signature)
+
+Legacy usage (with secrets.json):
+    from sdk import SAPClient
+    client = SAPClient.from_config("secrets.json")
 """
 
+# New unified API
+from .sap import SAP
+
+# Legacy client
 from .client import SAPClient
 from .config import SAPConfig, NetworkConfig, ContractInfo
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus

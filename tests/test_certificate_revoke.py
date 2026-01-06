@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CERTIFICATE V2 - Revocation Test
+SAP - Certificate Revocation Test
 
 This script tests revoking a certificate by spending the certificate UTXO.
 Both Admin and Delegate can revoke certificates.
@@ -12,8 +12,8 @@ Usage:
     python test_certificate_revoke.py --delegate # Revoke with Delegate key
 
 Before running:
-    1. First emit a certificate using test_vault_v2_emit.py
-    2. Update CERT_UTXO_TXID and CERT_UTXO_VOUT with the certificate output
+    1. First emit a certificate using test_emit.py
+    2. The script will find certificate UTXOs automatically
 """
 
 import subprocess
@@ -121,7 +121,7 @@ def main():
     if not utxos:
         print(f"No certificate UTXOs found at: {CERT_ADDRESS}")
         print()
-        print("First emit a certificate using test_vault_v2_emit.py")
+        print("First emit a certificate using test_emit.py")
         return
 
     print(f"Found {len(utxos)} certificate UTXO(s):")

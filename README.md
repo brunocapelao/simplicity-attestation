@@ -70,8 +70,9 @@ secrets.json                # Chaves e enderecos (testnet)
 ### Emitir Certificado
 ```bash
 cd tests
-python test_emit.py --admin      # Admin emite
-python test_emit.py --delegate   # Delegate emite
+python test_emit.py --admin-issue          # Admin emite certificado
+python test_emit.py --delegate-issue       # Delegate emite certificado
+python test_emit.py --admin-unconditional  # Admin drena vault (desativar delegado)
 ```
 
 ### Revogar Certificado

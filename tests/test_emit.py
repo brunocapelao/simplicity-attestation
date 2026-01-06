@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-VAULT V3 - Certificate Emission Test
+SAP - Certificate Emission Test
 
-Vault v3 has 3 spending paths:
+Delegation Vault has 3 spending paths:
   1. Admin Unconditional (Left) - Can drain vault
   2. Admin Issue Certificate (Right-Left) - Admin emits with covenants
   3. Delegate Issue Certificate (Right-Right) - Delegate emits with covenants
 
 Usage:
-    python test_vault_v3_emit.py --admin-unconditional  # Drain vault
-    python test_vault_v3_emit.py --admin-issue          # Admin emits certificate
-    python test_vault_v3_emit.py --delegate-issue       # Delegate emits certificate
+    python test_emit.py --admin-unconditional  # Drain vault
+    python test_emit.py --admin-issue          # Admin emits certificate
+    python test_emit.py --delegate-issue       # Delegate emits certificate
 """
 
 import subprocess
@@ -149,9 +149,9 @@ def main():
 
     if not any([admin_unconditional, admin_issue, delegate_issue]):
         print("Usage:")
-        print("  python test_vault_v3_emit.py --admin-unconditional  # Drain vault")
-        print("  python test_vault_v3_emit.py --admin-issue          # Admin emits certificate")
-        print("  python test_vault_v3_emit.py --delegate-issue       # Delegate emits certificate")
+        print("  python test_emit.py --admin-unconditional  # Drain vault")
+        print("  python test_emit.py --admin-issue          # Admin emits certificate")
+        print("  python test_emit.py --delegate-issue       # Delegate emits certificate")
         return
 
     if admin_unconditional:

@@ -7,7 +7,7 @@ Provides async transaction confirmation waiting and status tracking.
 import time
 import threading
 from typing import Optional, Callable, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from .infra.api import BlockstreamAPI

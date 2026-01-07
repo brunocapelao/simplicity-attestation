@@ -95,6 +95,7 @@ from .tools import ToolManager, ensure_tools, get_tool_path
 __version__ = "0.6.0"
 __all__ = [
     # Core
+    "SAP",
     "SAPClient",
     "SAPConfig",
     "NetworkConfig",
@@ -162,4 +163,9 @@ __all__ = [
     "StructuredLogger",
     "LogLevel",
     "create_file_logger",
+
+    # Tools
+    "ToolManager",
+    "ensure_tools",
+    "get_tool_path",
 ]

@@ -81,6 +81,38 @@ python test_certificate_revoke.py --admin
 python test_certificate_revoke.py --delegate
 ```
 
+### SDK (E2E)
+```python
+from sdk.sap import SAP
+from sdk import SAPClient
+
+# 1) Criar vault (config publica)
+config = SAP.create_vault(admin_pubkey, delegate_pubkey, network="testnet")
+config.save("network_config.json")
+
+# 2) Financiar o vault (externo)
+# 3) Emitir certificado
+client = SAPClient.from_config("secrets.json")
+issue = client.issue_certificate(cid="Qm...", issuer="delegate")
+
+# 4) Revogar com motivo e substituicao
+revoke = client.revoke_certificate(
+    issue.txid, 1,
+    reason_code=6,
+    replacement_txid="new_txid..."
+)
+```
+
+### Execucao E2E recente (testnet)
+
+Emissoes:
+- Admin: https://blockstream.info/liquidtestnet/tx/5487ed018fa69105acc4ce525b865d25f8cb0ac92297a64539008b50243ed7bb
+- Delegate: https://blockstream.info/liquidtestnet/tx/423efc36bb3112546324a91482681091dea6a9e83a94583fa5a80fe3cedef355
+
+Revogacoes:
+- Admin: https://blockstream.info/liquidtestnet/tx/07048a43fabae3b4ca3f10316b9241fdee5259e68c61056a89c66acac16c57e5
+- Delegate: https://blockstream.info/liquidtestnet/tx/2601bb94fcb361ff34657804b7274ceb47a83f31eab7c3cce56b6a3eee718ef0
+
 ## Ferramentas
 
 ```bash
@@ -101,10 +133,12 @@ pip install embit requests
 ```
 OP_RETURN:
 ┌───────┬─────────┬──────┬──────────────────────────┐
-│ "SAP" │ VERSION │ TYPE │     HASH/CID (32 bytes)  │
-│3 bytes│ 1 byte  │1 byte│        32 bytes          │
+│ "SAP" │ VERSION │ TYPE │        PAYLOAD (var)     │
+│3 bytes│ 1 byte  │1 byte│        variable          │
 └───────┴─────────┴──────┴──────────────────────────┘
 ```
+
+REVOKE payload: `TXID:VOUT` + `reason_code` opcional + `replacement_txid` opcional.
 
 ## Chaves (Testnet)
 

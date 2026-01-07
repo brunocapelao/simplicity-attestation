@@ -70,7 +70,7 @@ Depende do TYPE:
 | TYPE | Payload |
 |------|---------|
 | ATTEST | CID IPFS (46-59 bytes) |
-| REVOKE | TXID:vout (+ reason_code opcional) |
+| REVOKE | TXID:vout (+ reason_code opcional + replacement_txid opcional) |
 | UPDATE | CID IPFS (46-59 bytes) |
 | DELEGATE | Pubkey do delegate (32 bytes) |
 | UNDELEGATE | Pubkey do delegate (32 bytes) |
@@ -98,13 +98,33 @@ HEX completo:
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAP     │ 01  │  02  │ <TXID>:<vout>[:reason_code]                     │
+│    SAP     │ 01  │  02  │ <TXID>:<vout>[:reason_code][:replacement_txid]  │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
 │ 534150     │ 01  │  02  │ (34 bytes - 32 bytes TXID + 2 bytes vout)       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
 ```
 
-Se presente, `reason_code` é 1 byte adicional ao final do payload.
+Se presente, `reason_code` é 1 byte adicional ao final do payload. `replacement_txid` (32 bytes) só pode aparecer junto com `reason_code`.
+
+### 3.3 Códigos de revogação (reason_code)
+
+| Código | Constante | Uso | Descrição curta | Quando usar (exemplos práticos) |
+| --- | --- | --- | --- | --- |
+| **1** | `DATA_ERROR` | MVP | Erro na emissão/conteúdo. | Campo trocado, pessoa errada, data inválida; revogue e reemita correto. |
+| **2** | `DUPLICATE` | MVP | Registro duplicado (mesmo emissor). | Duas emissões do mesmo objeto; manter apenas a via correta. |
+| **3** | `FRAUD_SUSPECTED` | MVP | Indícios de fraude (em apuração). | Sinais de falsificação/uso indevido; pode evoluir para 4. |
+| **4** | `FRAUD_CONFIRMED` | MVP | Fraude confirmada com evidência. | Documento/VC falsa, identidade forjada. |
+| **5** | `HOLDER_REQUEST` | MVP | Pedido do titular. | Retirada de consentimento, exposição indevida, necessidade de cancelamento. |
+| **6** | `REISSUE_REPLACEMENT` | MVP | Substituição por reemissão. | Nova via corrigida/atualizada substitui a anterior. |
+| **7** | `ADMINISTRATIVE` | MVP | Decisão/regra administrativa. | Encerramento de vínculo, programa/política encerrada, óbito. |
+| **8** | `LEGAL_ORDER` | MVP | Ordem judicial/regulatória. | Determinação externa obrigatória. |
+| **9** | `KEY_COMPROMISE` | MVP | Comprometimento de chaves/dispositivo. | Carteira do titular perdida/comprometida; chave do emissor exposta. |
+| **10** | `SUSPENDED` | Futuro (V2) | Suspensão temporária (não-terminal). | Bloqueio enquanto dura investigação/cumprimento de requisito. |
+| **11** | `CRYPTO_DEPRECATED` | Futuro | Algoritmo/curva obsoleta ou vulnerável. | Revogação/reemissão em massa por obsolescência criptográfica. |
+| **12** | `PROCESS_ERROR` | Futuro | Falha sistêmica de processo/lote. | Template/ETL/regra aplicados incorretamente a um lote; recall. |
+| **13** | **RESERVED** | Futuro | Reservado. | Mantido para extensões padronizadas. |
+| **14** | **RESERVED** | Futuro | Reservado. | Mantido para extensões padronizadas. |
+| **15** | **RESERVED** | Futuro | Reservado. | Mantido para extensões padronizadas. |
 
 ---
 

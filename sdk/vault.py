@@ -10,7 +10,7 @@ import json
 import hashlib
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 from .config import ContractInfo, NetworkConfig
 from .infra.api import BlockstreamAPI
@@ -298,7 +298,7 @@ fn main() {{
                 program=data["program"]
             )
             
-        except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        except (subprocess.SubprocessError, json.JSONDecodeError):
             # Fallback: try simc directly
             return self._compile_with_simc(
                 contract_path, admin_key, delegate_key, internal_key, network

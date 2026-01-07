@@ -7,7 +7,7 @@ Encapsulates the 8-step PSET workflow into simple method calls.
 
 from typing import Literal, Optional
 
-from ..models import UTXO, TransactionResult, Certificate
+from ..models import UTXO, TransactionResult
 from ..config import SAPConfig
 from .witness import WitnessEncoder
 from .contracts import ContractRegistry
@@ -149,6 +149,7 @@ class TransactionBuilder:
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
         reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -167,8 +168,10 @@ class TransactionBuilder:
         
         outputs = []
         sap_payload = None
-        if reason_code is not None:
-            sap_payload = self._build_sap_revoke_payload(cert_utxo.txid, cert_utxo.vout, reason_code)
+        if reason_code is not None or replacement_txid is not None:
+            sap_payload = self._build_sap_revoke_payload(
+                cert_utxo.txid, cert_utxo.vout, reason_code, replacement_txid
+            )
 
         # Calculate outputs
         if recipient and cert_utxo.value > self.FEE_SATS:
@@ -360,9 +363,17 @@ class TransactionBuilder:
         payload = magic + version + op_type + cid_bytes
         return payload.hex()
 
-    def _build_sap_revoke_payload(self, txid: str, vout: int, reason_code: Optional[int]) -> str:
+    def _build_sap_revoke_payload(
+        self,
+        txid: str,
+        vout: int,
+        reason_code: Optional[int],
+        replacement_txid: Optional[str]
+    ) -> str:
         """Build SAP REVOKE OP_RETURN payload with optional reason code."""
-        return SAPProtocol.encode_revoke(txid, vout, reason_code=reason_code)
+        return SAPProtocol.encode_revoke(
+            txid, vout, reason_code=reason_code, replacement_txid=replacement_txid
+        )
     
     # =========================================================================
     # External Signature Support (prepare/finalize pattern)
@@ -416,15 +427,18 @@ class TransactionBuilder:
         cert_utxo: UTXO,
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
-        reason_code: Optional[int] = None
+        reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None
     ) -> dict:
         """Prepare certificate revocation for external signing."""
         cert = self.contracts.certificate
 
         outputs = []
         sap_payload = None
-        if reason_code is not None:
-            sap_payload = self._build_sap_revoke_payload(cert_utxo.txid, cert_utxo.vout, reason_code)
+        if reason_code is not None or replacement_txid is not None:
+            sap_payload = self._build_sap_revoke_payload(
+                cert_utxo.txid, cert_utxo.vout, reason_code, replacement_txid
+            )
 
         if recipient and cert_utxo.value > self.FEE_SATS:
             output_sats = cert_utxo.value - self.FEE_SATS

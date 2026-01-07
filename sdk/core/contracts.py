@@ -7,7 +7,7 @@ Manages contract information and provides contract-specific utilities.
 from dataclasses import dataclass
 from typing import Optional
 
-from ..config import SAPConfig, ContractInfo
+from ..config import SAPConfig
 
 
 @dataclass

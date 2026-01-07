@@ -116,6 +116,29 @@ signature = provider.sign(prepared.sig_hash_bytes)
 result = client.finalize_transaction(prepared, signature)
 ```
 
+### Ciclo Completo (E2E)
+
+```python
+from sdk.sap import SAP
+from sdk import SAPClient
+
+# 1) Criar vault (publico)
+config = SAP.create_vault(admin_pubkey, delegate_pubkey, network="testnet")
+config.save("network_config.json")
+
+# 2) Financiar vault externamente (L-BTC)
+# 3) Emitir certificado
+client = SAPClient.from_config("secrets.json")
+issue = client.issue_certificate(cid="Qm...", issuer="delegate")
+
+# 4) Revogar (com motivo + substituicao)
+revoke = client.revoke_certificate(
+    issue.txid, 1,
+    reason_code=6,
+    replacement_txid="new_txid..."
+)
+```
+
 ---
 
 ## Arquitetura de Segurança
@@ -457,7 +480,7 @@ logger = create_file_logger("/var/log/sap.log")
 | Tipo | Código | Payload |
 |------|--------|---------|
 | ATTEST | 0x01 | CID/hash (até 75 bytes) |
-| REVOKE | 0x02 | txid:vout |
+| REVOKE | 0x02 | txid:vout (+ reason_code + replacement_txid) |
 | UPDATE | 0x03 | CID/hash |
 | DELEGATE | 0x04 | pubkey |
 | UNDELEGATE | 0x05 | pubkey |
@@ -482,6 +505,15 @@ Opcionalmente, a revogação pode carregar um código de motivo (1 byte) no payl
 
 ```python
 result = client.revoke_certificate(txid, vout=1, reason_code=3)
+```
+
+Com substituição (referência ao novo certificado):
+```python
+result = client.revoke_certificate(
+    txid, vout=1,
+    reason_code=6,
+    replacement_txid=new_txid
+)
 ```
 
 | Código | Constante | Uso | Descrição curta | Quando usar (exemplos práticos) |

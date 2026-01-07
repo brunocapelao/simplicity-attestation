@@ -6,7 +6,7 @@ Enforces least-privilege principle at the SDK level.
 """
 
 from enum import Enum
-from typing import Set, Optional
+from typing import Set
 from dataclasses import dataclass
 
 from .errors import SAPError

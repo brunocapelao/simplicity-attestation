@@ -42,9 +42,6 @@ import json
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import Optional, Literal, List, Union
-import time
-
-from embit import ec
 
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
 from .infra.hal import HalSimplicity
@@ -451,7 +448,8 @@ class SAP:
         txid: str,
         vout: int = 1,
         recipient: Optional[str] = None,
-        reason_code: Optional[int] = None
+        reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None
     ) -> TransactionResult:
         """
         Revoke a certificate.
@@ -478,7 +476,7 @@ class SAP:
                 error=f"Certificate UTXO not found: {txid}:{vout}"
             )
         
-        return self._build_and_sign_revoke(cert_utxo, recipient, reason_code)
+        return self._build_and_sign_revoke(cert_utxo, recipient, reason_code, replacement_txid)
     
     def verify_certificate(self, txid: str, vout: int = 1) -> CertificateStatus:
         """Verify a certificate's status."""
@@ -558,7 +556,8 @@ class SAP:
         self,
         cert_utxo: UTXO,
         recipient: Optional[str],
-        reason_code: Optional[int]
+        reason_code: Optional[int],
+        replacement_txid: Optional[str]
     ) -> TransactionResult:
         """Build and sign certificate revocation."""
         FEE_SATS = 500
@@ -566,8 +565,13 @@ class SAP:
         inputs = [{"txid": cert_utxo.txid, "vout": cert_utxo.vout}]
         
         sap_payload = None
-        if reason_code is not None:
-            sap_payload = SAPProtocol.encode_revoke(cert_utxo.txid, cert_utxo.vout, reason_code=reason_code)
+        if reason_code is not None or replacement_txid is not None:
+            sap_payload = SAPProtocol.encode_revoke(
+                cert_utxo.txid,
+                cert_utxo.vout,
+                reason_code=reason_code,
+                replacement_txid=replacement_txid
+            )
 
         if recipient and cert_utxo.value > FEE_SATS:
             output_sats = cert_utxo.value - FEE_SATS

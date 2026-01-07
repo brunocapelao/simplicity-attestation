@@ -10,8 +10,7 @@ from typing import Optional, List, Literal, Callable
 import logging
 
 from .config import SAPConfig
-from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
-from .core.witness import WitnessEncoder
+from .models import Certificate, Vault, TransactionResult, CertificateStatus
 from .core.transaction import TransactionBuilder
 from .core.contracts import ContractRegistry
 from .infra.hal import HalSimplicity
@@ -19,20 +18,18 @@ from .infra.api import BlockstreamAPI
 from .protocols.sap import SAPProtocol
 
 # New production features
-from .confirmation import ConfirmationTracker, ConfirmationStatus, TxStatus
+from .confirmation import ConfirmationTracker, ConfirmationStatus
 from .fees import FeeEstimator, FeePriority, FeeEstimate
-from .events import EventEmitter, EventType, Event
+from .events import EventEmitter, EventType
 from .logging import StructuredLogger
 from .errors import (
     VaultEmptyError,
     InsufficientFundsError,
     CertificateNotFoundError,
-    CertificateAlreadyRevokedError,
 )
 
 # External signature support
-from .prepared import PreparedTransaction, TransactionType, SignedTransaction
-from .providers import KeyProvider
+from .prepared import PreparedTransaction, TransactionType
 
 
 class SAPClient:
@@ -245,6 +242,7 @@ class SAPClient:
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
         reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -281,6 +279,7 @@ class SAPClient:
             revoker=revoker,
             recipient=recipient,
             reason_code=reason_code,
+            replacement_txid=replacement_txid,
             broadcast=broadcast
         )
     
@@ -405,7 +404,7 @@ class SAPClient:
             raise InsufficientFundsError(
                 required=1046,
                 available=vault.balance,
-                message=f"Vault has insufficient funds for issuance"
+                message="Vault has insufficient funds for issuance"
             )
         
         if not vault.available_utxo:
@@ -443,7 +442,8 @@ class SAPClient:
         vout: int = 1,
         revoker: Literal["admin", "delegate"] = "admin",
         recipient: Optional[str] = None,
-        reason_code: Optional[int] = None
+        reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None
     ) -> PreparedTransaction:
         """
         Prepare a certificate revocation for external signing.
@@ -474,7 +474,8 @@ class SAPClient:
             cert_utxo=cert_utxo,
             revoker=revoker,
             recipient=recipient,
-            reason_code=reason_code
+            reason_code=reason_code,
+            replacement_txid=replacement_txid
         )
         
         return PreparedTransaction(
@@ -490,6 +491,7 @@ class SAPClient:
                 "certificate": f"{txid}:{vout}",
                 "recipient": recipient or "(burn as fee)",
                 "reason_code": reason_code,
+                "replacement_txid": replacement_txid,
             }
         )
     

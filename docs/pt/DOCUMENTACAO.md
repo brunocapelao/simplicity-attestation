@@ -64,7 +64,7 @@ O SA e um sistema de certificados digitais on-chain que utiliza Simplicity na Li
   │                                                                             │
   │  AÇÃO                              │  ADMIN  │  DELEGATE  │                │
   │  ──────────────────────────────────┼─────────┼────────────┤                │
-  │  Emitir certificado (vault)        │   ❌    │     ✅     │                │
+  │  Emitir certificado (vault)        │   ✅    │     ✅     │                │
   │  Revogar certificado               │   ✅    │     ✅     │                │
   │  Desativar delegado (esvaziar)     │   ✅    │     ❌     │                │
   │  Gastar vault incondicionalmente   │   ✅    │     ❌     │                │
@@ -76,7 +76,7 @@ O SA e um sistema de certificados digitais on-chain que utiliza Simplicity na Li
   │  Admin (Autoridade Máxima)                                                  │
   │    ├── Pode desativar Delegado a qualquer momento                          │
   │    ├── Pode revogar qualquer certificado                                   │
-  │    └── NÃO pode emitir certificado (by design)                             │
+  │    └── Pode emitir certificados (com covenants)                            │
   │                                                                             │
   │  Delegado (Autoridade Delegada)                                             │
   │    ├── Pode emitir certificados (enquanto vault tiver fundos)              │
@@ -92,7 +92,7 @@ O SA e um sistema de certificados digitais on-chain que utiliza Simplicity na Li
           ┌─────────────┼─────────────┐
           │             │             │
           ▼             ▼             ▼
-     DESATIVAR     REVOGAR        (não emite)
+     DESATIVAR     REVOGAR        (emite c/ covenant)
      DELEGADO    CERTIFICADO
           │             │
           ▼             ▼
@@ -342,7 +342,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Valor: input - cert_amount - fee                       │    │
 │     │                                                                  │    │
 │     │ Output 1: Certificate UTXO → Certificate Address                │    │
-│     │           Valor: 1000 sats (minimo)                             │    │
+│     │           Valor: 546 sats (dust)                                │    │
 │     │                                                                  │    │
 │     │ Output 2: OP_RETURN                                             │    │
 │     │           Dados: SAP 01 01 <CID_IPFS>                           │    │
@@ -373,12 +373,13 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     ├─────────────────────────────────────────────────────────────────┤    │
 │     │ Input 0: Certificate UTXO (gasto com admin ou delegate path)    │    │
 │     │                                                                  │    │
-│     │ Output 0: Qualquer endereco (recupera os sats)                  │    │
+│     │ Output 0: Destinatario opcional (se informado)                  │    │
+│     │           Se omitido, valor vai para fee (queima)               │    │
 │     │                                                                  │    │
 │     │ Output 1: OP_RETURN (opcional)                                  │    │
-│     │           Dados: SAP 01 02 <TXID_ORIGINAL:VOUT>                 │    │
+│     │           Dados: SAP 01 02 <TXID:VOUT>[:REASON][:REPLACEMENT]   │    │
 │     │                                                                  │    │
-│     │ Output 2: Fee                                                   │    │
+│     │ Output 2: Fee (se houver destinatario)                          │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
 │                                                                             │
 │  3. Assina e broadcast                                                      │
@@ -418,6 +419,56 @@ disconnect(committed_expr, disconnected_expr_cmr)
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### 5.5 Ciclo completo (E2E)
+
+1. **Criacao do vault** (Admin): compila contratos com chaves publicas, gera CMRs e enderecos.
+2. **Funding do vault**: enviar L-BTC para o endereco do vault.
+3. **Emissao** (Admin ou Delegado): gasta o vault e cria o Certificate UTXO + OP_RETURN.
+4. **Revogacao** (Admin ou Delegado): gasta o Certificate UTXO.
+5. **Substituicao (opcional)**:
+   - Revoga com `reason_code=REISSUE_REPLACEMENT` e `replacement_txid`.
+   - Emite novo certificado com o CID atualizado.
+
+O estado do certificado e definido pelo UTXO:
+- **Unspent**: valido.
+- **Spent**: revogado.
+
+### 5.6 Exemplo E2E (testnet)
+
+Emissao:
+- TXID: `49f10e4899029104aa875d11df82e2f1acfb10360a6268d13b5fe10c787dcb48`
+- Output 1 (certificate UTXO): `vout=1` na `tex1pfeaa7eex2cxa923tehj5vd0emf779fp8v968mcx9uymm6q3gze6s8cvkka`
+
+Revogacao com substituicao:
+- TXID: `b73da760d3ac4b5c893a43a359c55cf657a770bd1cb49893e4aad7c9e6329f88`
+- OP_RETURN inclui:
+  - `TXID:VOUT` revogado: `1650b3ffe11d591d918c5c5b55d7a4bf70874ab526be28206e51d441aba2a6b9:1`
+  - `reason_code=6` (REISSUE_REPLACEMENT)
+  - `replacement_txid=49f10e4899029104aa875d11df82e2f1acfb10360a6268d13b5fe10c787dcb48`
+Explorer:
+- Emissao: https://blockstream.info/liquidtestnet/tx/49f10e4899029104aa875d11df82e2f1acfb10360a6268d13b5fe10c787dcb48
+- Revogacao: https://blockstream.info/liquidtestnet/tx/b73da760d3ac4b5c893a43a359c55cf657a770bd1cb49893e4aad7c9e6329f88
+
+### 5.7 Execucao E2E recente (testnet)
+
+Emissoes:
+- Admin: `5487ed018fa69105acc4ce525b865d25f8cb0ac92297a64539008b50243ed7bb`
+- Delegate: `423efc36bb3112546324a91482681091dea6a9e83a94583fa5a80fe3cedef355`
+- Edge cases (emitido pelo script): `2bf4e71f5c9c081a93e1599fe45e324e7a8670e1eb104eec7507955109d1d507`
+
+Explorer:
+- Admin: https://blockstream.info/liquidtestnet/tx/5487ed018fa69105acc4ce525b865d25f8cb0ac92297a64539008b50243ed7bb
+- Delegate: https://blockstream.info/liquidtestnet/tx/423efc36bb3112546324a91482681091dea6a9e83a94583fa5a80fe3cedef355
+- Edge cases: https://blockstream.info/liquidtestnet/tx/2bf4e71f5c9c081a93e1599fe45e324e7a8670e1eb104eec7507955109d1d507
+
+Revogacoes:
+- Admin: `07048a43fabae3b4ca3f10316b9241fdee5259e68c61056a89c66acac16c57e5`
+- Delegate: `2601bb94fcb361ff34657804b7274ceb47a83f31eab7c3cce56b6a3eee718ef0`
+
+Explorer:
+- Admin: https://blockstream.info/liquidtestnet/tx/07048a43fabae3b4ca3f10316b9241fdee5259e68c61056a89c66acac16c57e5
+- Delegate: https://blockstream.info/liquidtestnet/tx/2601bb94fcb361ff34657804b7274ceb47a83f31eab7c3cce56b6a3eee718ef0
+
 ---
 
 ## 6. Protocolo SAP (OP_RETURN)
@@ -438,7 +489,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 | Tipo | Byte | Descricao | Payload |
 |------|------|-----------|---------|
 | ATTEST | `0x01` | Emissao de certificado | CID IPFS |
-| REVOKE | `0x02` | Revogacao de certificado | TXID:VOUT (34 bytes) |
+| REVOKE | `0x02` | Revogacao de certificado | TXID:VOUT (+ reason_code + replacement_txid) |
 | UPDATE | `0x03` | Atualizacao de metadados | Novo CID IPFS |
 
 ### 6.3 Exemplos
@@ -452,7 +503,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 └──────────── Magic: "SAP"
 ```
 
-**Revogacao:**
+**Revogacao (minima):**
 ```
 534150010212ab34cd56ef...0001
 │     │ │ └── TXID:VOUT referenciado
@@ -460,6 +511,33 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     └────── Versao: 1
 └──────────── Magic: "SAP"
 ```
+
+**Revogacao com motivo e substituicao:**
+```
+5341500102 <TXID> <VOUT> <REASON> <REPLACEMENT_TXID>
+```
+
+`REASON` e `REPLACEMENT_TXID` sao opcionais, mas `REPLACEMENT_TXID` so pode aparecer se `REASON` estiver presente.
+
+### 6.4 Codigos de revogacao (reason_code)
+
+| Codigo | Constante | Uso | Descricao curta | Quando usar (exemplos praticos) |
+| --- | --- | --- | --- | --- |
+| **1** | `DATA_ERROR` | MVP | Erro na emissao/conteudo. | Campo trocado, pessoa errada, data invalida; revogue e reemita correto. |
+| **2** | `DUPLICATE` | MVP | Registro duplicado (mesmo emissor). | Duas emissoes do mesmo objeto; manter apenas a via correta. |
+| **3** | `FRAUD_SUSPECTED` | MVP | Indicios de fraude (em apuracao). | Sinais de falsificacao/uso indevido; pode evoluir para 4. |
+| **4** | `FRAUD_CONFIRMED` | MVP | Fraude confirmada com evidencia. | Documento/VC falsa, identidade forjada. |
+| **5** | `HOLDER_REQUEST` | MVP | Pedido do titular. | Retirada de consentimento, exposicao indevida, necessidade de cancelamento. |
+| **6** | `REISSUE_REPLACEMENT` | MVP | Substituicao por reemissao. | Nova via corrigida/atualizada substitui a anterior. |
+| **7** | `ADMINISTRATIVE` | MVP | Decisao/regra administrativa. | Encerramento de vinculo, programa/politica encerrada, obito. |
+| **8** | `LEGAL_ORDER` | MVP | Ordem judicial/regulatoria. | Determinacao externa obrigatoria. |
+| **9** | `KEY_COMPROMISE` | MVP | Comprometimento de chaves/dispositivo. | Carteira do titular perdida/comprometida; chave do emissor exposta. |
+| **10** | `SUSPENDED` | Futuro (V2) | Suspensao temporaria (nao-terminal). | Bloqueio enquanto dura investigacao/cumprimento de requisito. |
+| **11** | `CRYPTO_DEPRECATED` | Futuro | Algoritmo/curva obsoleta ou vulneravel. | Revogacao/reemissao em massa por obsolescencia criptografica. |
+| **12** | `PROCESS_ERROR` | Futuro | Falha sistemica de processo/lote. | Template/ETL/regra aplicados incorretamente a um lote; recall. |
+| **13** | **RESERVED** | Futuro | Reservado. | Mantido para extensoes padronizadas. |
+| **14** | **RESERVED** | Futuro | Reservado. | Mantido para extensoes padronizadas. |
+| **15** | **RESERVED** | Futuro | Reservado. | Mantido para extensoes padronizadas. |
 
 ---
 

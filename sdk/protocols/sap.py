@@ -21,6 +21,7 @@ class SAPRevoke:
     txid: str
     vout: int
     reason_code: Optional[int] = None
+    replacement_txid: Optional[str] = None
     version: int = 1
 
 
@@ -130,7 +131,13 @@ class SAPProtocol:
         return (header + cid_bytes).hex()
     
     @classmethod
-    def encode_revoke(cls, txid: str, vout: int, reason_code: Optional[int] = None) -> str:
+    def encode_revoke(
+        cls,
+        txid: str,
+        vout: int,
+        reason_code: Optional[int] = None,
+        replacement_txid: Optional[str] = None
+    ) -> str:
         """
         Encode a revocation OP_RETURN payload.
         
@@ -138,6 +145,7 @@ class SAPProtocol:
             txid: Transaction ID of the certificate to revoke.
             vout: Output index of the certificate.
             reason_code: Optional small integer reason code (0-255).
+            replacement_txid: Optional txid for replacement certificate.
         
         Returns:
             Hex-encoded SAP payload.
@@ -151,6 +159,13 @@ class SAPProtocol:
             if not (0 <= reason_code <= 255):
                 raise ValueError("reason_code must be between 0 and 255")
             payload += bytes([reason_code])
+
+        if replacement_txid is not None:
+            if reason_code is None:
+                raise ValueError("replacement_txid requires reason_code")
+            if len(replacement_txid) != 64:
+                raise ValueError("replacement_txid must be 64 hex characters")
+            payload += bytes.fromhex(replacement_txid)
 
         cls.validate_payload_size(payload, "REVOKE payload")
         return (header + payload).hex()
@@ -221,8 +236,17 @@ class SAPProtocol:
                 return None
             txid = payload[:32].hex()
             vout = int.from_bytes(payload[32:34], 'big')
+            if len(payload) == 66:
+                return None
             reason_code = payload[34] if len(payload) >= 35 else None
-            return SAPRevoke(txid=txid, vout=vout, reason_code=reason_code, version=version)
+            replacement_txid = payload[35:67].hex() if len(payload) >= 67 else None
+            return SAPRevoke(
+                txid=txid,
+                vout=vout,
+                reason_code=reason_code,
+                replacement_txid=replacement_txid,
+                version=version
+            )
         
         elif op_type == cls.TYPE_UPDATE:
             try:

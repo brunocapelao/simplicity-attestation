@@ -5,7 +5,6 @@ Manages external binary dependencies (hal-simplicity, simc).
 Downloads and caches binaries automatically on first use.
 """
 
-import os
 import sys
 import platform
 import hashlib
@@ -17,7 +16,6 @@ from typing import Optional, Dict
 from dataclasses import dataclass
 import urllib.request
 import urllib.error
-import json
 
 
 @dataclass

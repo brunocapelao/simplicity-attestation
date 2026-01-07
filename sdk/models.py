@@ -5,7 +5,7 @@ Core data structures used throughout the SDK.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Literal
+from typing import Optional, List
 from enum import Enum
 
 

@@ -214,7 +214,7 @@ def main():
         print("=== Output Plan (Certificate Emission) ===")
         print(f"  Output 0 (Change to Vault): {change_sats} sats")
         print(f"  Output 1 (Certificate):   {CERT_SATS} sats")
-        print(f"  Output 2 (OP_RETURN):     0 sats")
+        print("  Output 2 (OP_RETURN):     0 sats")
         print(f"  Output 3 (Fee):           {FEE_SATS} sats")
 
         inputs_json = json.dumps([{"txid": utxo_txid, "vout": utxo_vout}])

@@ -18,7 +18,6 @@ Tests:
 import subprocess
 import json
 import requests
-import os
 from embit import ec
 
 # Configuration
@@ -103,7 +102,7 @@ def test_vault_verification(test_name, inputs_json, outputs_json, utxo_value, se
     pset_out, err = run_hal(["simplicity", "pset", "create", "--liquid", inputs_json, outputs_json])
     if err:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected) - PSET creation failed")
+            print("RESULT: FAILED (as expected) - PSET creation failed")
             print(f"  Error: {err[:100]}...")
             return True
         print(f"RESULT: UNEXPECTED FAILURE - PSET creation failed: {err}")
@@ -121,7 +120,7 @@ def test_vault_verification(test_name, inputs_json, outputs_json, utxo_value, se
     ])
     if err:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected) - Update input failed")
+            print("RESULT: FAILED (as expected) - Update input failed")
             return True
         print(f"RESULT: UNEXPECTED FAILURE - Update input failed: {err}")
         return False
@@ -133,7 +132,7 @@ def test_vault_verification(test_name, inputs_json, outputs_json, utxo_value, se
     run_out, err = run_hal(["simplicity", "pset", "run", "--liquid", pset2, "0", VAULT_PROGRAM, dummy_witness])
     if err:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected) - Run failed")
+            print("RESULT: FAILED (as expected) - Run failed")
             return True
         print(f"RESULT: UNEXPECTED FAILURE - Run failed: {err}")
         return False
@@ -147,9 +146,9 @@ def test_vault_verification(test_name, inputs_json, outputs_json, utxo_value, se
 
     if not sig_all_hash:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected) - No sig_all_hash")
+            print("RESULT: FAILED (as expected) - No sig_all_hash")
             return True
-        print(f"RESULT: UNEXPECTED FAILURE - No sig_all_hash")
+        print("RESULT: UNEXPECTED FAILURE - No sig_all_hash")
         return False
 
     # Sign
@@ -161,7 +160,7 @@ def test_vault_verification(test_name, inputs_json, outputs_json, utxo_value, se
     run_out, err = run_hal(["simplicity", "pset", "run", "--liquid", pset2, "0", VAULT_PROGRAM, witness])
     if err:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected) - Verification error")
+            print("RESULT: FAILED (as expected) - Verification error")
             return True
         print(f"RESULT: UNEXPECTED FAILURE - Verification error: {err}")
         return False
@@ -241,7 +240,7 @@ def test_certificate_revocation(test_name, cert_utxo, secret_key, is_admin, expe
             break
 
     if not sig_all_hash:
-        print(f"RESULT: FAILED - No sig_all_hash")
+        print("RESULT: FAILED - No sig_all_hash")
         return False
 
     # Sign
@@ -253,7 +252,7 @@ def test_certificate_revocation(test_name, cert_utxo, secret_key, is_admin, expe
     run_out, err = run_hal(["simplicity", "pset", "run", "--liquid", pset2, "0", CERT_PROGRAM, witness])
     if err:
         if not expect_success:
-            print(f"RESULT: FAILED (as expected)")
+            print("RESULT: FAILED (as expected)")
             return True
         print(f"RESULT: UNEXPECTED FAILURE: {err}")
         return False

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Build artifacts
+target/
+*.b64
+*.wit
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local secrets / env
+secrets*.json
+*.local.json
+.env
+.env.*
+
+# Python caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage

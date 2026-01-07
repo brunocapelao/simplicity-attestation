@@ -1,0 +1,29 @@
+// =============================================================================
+// SAP - Certificate Contract
+// =============================================================================
+//
+// The EXISTENCE of this UTXO represents a VALID certificate.
+// SPENDING this UTXO = REVOKING the certificate.
+//
+// WHO CAN REVOKE:
+// - Admin (Alice): Left path
+// - Delegate (Bob): Right path
+//
+// =============================================================================
+
+fn checksig(pk: Pubkey, sig: Signature) {
+    let msg: u256 = jet::sig_all_hash();
+    jet::bip_0340_verify((pk, msg), sig);
+}
+
+fn main() {
+    // Admin pubkey (Alice)
+    let admin_pk: Pubkey = 0x37b15eb62598bc3fe69f3fb2197de0a8107db1ac799aa6b8256faa7f2bfd18fb;
+    // Delegate pubkey (Bob)
+    let delegate_pk: Pubkey = 0x5556444fc719ed4051fafa2a91472540bbf8aa9ee41f0b2e17d26cc860a26f7d;
+
+    match witness::ADMIN_OR_DELEGATE {
+        Left(admin_sig: Signature) => checksig(admin_pk, admin_sig),
+        Right(delegate_sig: Signature) => checksig(delegate_pk, delegate_sig),
+    }
+}

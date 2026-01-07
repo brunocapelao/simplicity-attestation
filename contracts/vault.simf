@@ -1,0 +1,144 @@
+// =============================================================================
+// SAP - Delegation Vault
+// =============================================================================
+//
+// On-chain certificate system with hierarchical delegation.
+// 3 SPENDING PATHS:
+//
+// WITNESS STRUCTURE: Either<Signature, Either<Signature, Signature>>
+//
+// PATH 1 - ADMIN UNCONDITIONAL (Left):
+//   - Can spend unconditionally
+//   - Used for: deactivate delegate, recover funds
+//
+// PATH 2 - ADMIN ISSUE CERTIFICATE (Right-Left):
+//   - Admin issues certificate WITH enforced covenants
+//   - Same rules as delegate
+//
+// PATH 3 - DELEGATE ISSUE CERTIFICATE (Right-Right):
+//   - Delegate issues certificate WITH enforced covenants
+//   - Output 0: Change MUST go to this vault (self-reference)
+//   - Output 1: Certificate MUST go to certificate script
+//   - Output 2: OP_RETURN with data
+//   - Output 3: Fee
+//
+// =============================================================================
+
+fn checksig(pk: Pubkey, sig: Signature) {
+    let msg: u256 = jet::sig_all_hash();
+    jet::bip_0340_verify((pk, msg), sig);
+}
+
+// =============================================================================
+// ADMIN UNCONDITIONAL - Free Spend (Path: Left)
+// =============================================================================
+
+fn admin_unconditional(admin_sig: Signature) {
+    let admin_pk: Pubkey = 0x37b15eb62598bc3fe69f3fb2197de0a8107db1ac799aa6b8256faa7f2bfd18fb;
+    checksig(admin_pk, admin_sig);
+}
+
+// =============================================================================
+// CERTIFICATE ISSUANCE - Covenants Enforced (Shared by Admin and Delegate)
+// =============================================================================
+
+fn issue_certificate_with_covenants() {
+    // =========================================================================
+    // VALIDATION 1: Exactly 4 outputs
+    // =========================================================================
+    let num_outs: u32 = jet::num_outputs();
+    assert!(jet::eq_32(num_outs, 4));
+
+    // =========================================================================
+    // VALIDATION 2: Output 0 must be the vault itself (SELF-REFERENCE)
+    // =========================================================================
+    let self_hash: u256 = jet::current_script_hash();
+    let maybe_output0: Option<u256> = jet::output_script_hash(0);
+    match maybe_output0 {
+        Some(out_hash: u256) => assert!(jet::eq_256(self_hash, out_hash)),
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDATION 3: Output 1 must be the certificate script
+    // =========================================================================
+    // SHA256 of the certificate.simf scriptPubKey
+    let cert_script_hash: u256 = 0x00c088760d79e8a0e5e11513c9eff1b8d388c703c8dbb921c6c7a9ee371ffc0a;
+    let maybe_output1: Option<u256> = jet::output_script_hash(1);
+    match maybe_output1 {
+        Some(cert_hash: u256) => assert!(jet::eq_256(cert_script_hash, cert_hash)),
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDATION 4: Output 2 must contain OP_RETURN with data
+    // =========================================================================
+    let output_idx: u32 = 2;
+    let datum_idx: u32 = 0;
+    let maybe_datum: Option<Option<Either<(u2, u256), Either<u1, u4>>>> = jet::output_null_datum(output_idx, datum_idx);
+    match maybe_datum {
+        Some(inner_opt: Option<Either<(u2, u256), Either<u1, u4>>>) => {
+            match inner_opt {
+                Some(datum: Either<(u2, u256), Either<u1, u4>>) => { /* OP_RETURN exists - OK */ },
+                None => panic!(),
+            };
+        },
+        None => panic!(),
+    };
+
+    // =========================================================================
+    // VALIDATION 5: Output 3 must be fee
+    // =========================================================================
+    let maybe_fee: Option<bool> = jet::output_is_fee(3);
+    match maybe_fee {
+        Some(is_fee: bool) => assert!(is_fee),
+        None => panic!(),
+    };
+}
+
+// =============================================================================
+// ADMIN ISSUE CERTIFICATE - With Covenants (Path: Right-Left)
+// =============================================================================
+
+fn admin_issue_certificate(admin_sig: Signature) {
+    // First verify all covenants
+    issue_certificate_with_covenants();
+
+    // Then validate Admin signature
+    let admin_pk: Pubkey = 0x37b15eb62598bc3fe69f3fb2197de0a8107db1ac799aa6b8256faa7f2bfd18fb;
+    checksig(admin_pk, admin_sig);
+}
+
+// =============================================================================
+// DELEGATE ISSUE CERTIFICATE - With Covenants (Path: Right-Right)
+// =============================================================================
+
+fn delegate_issue_certificate(delegate_sig: Signature) {
+    // First verify all covenants
+    issue_certificate_with_covenants();
+
+    // Then validate Delegate signature
+    let delegate_pk: Pubkey = 0x5556444fc719ed4051fafa2a91472540bbf8aa9ee41f0b2e17d26cc860a26f7d;
+    checksig(delegate_pk, delegate_sig);
+}
+
+// =============================================================================
+// ENTRY POINT
+// =============================================================================
+// Witness: Either<Signature, Either<Signature, Signature>>
+//   Left(sig)         = Admin Unconditional
+//   Right(Left(sig))  = Admin Issue Certificate
+//   Right(Right(sig)) = Delegate Issue Certificate
+// =============================================================================
+
+fn main() {
+    match witness::SPENDING_PATH {
+        Left(admin_sig: Signature) => admin_unconditional(admin_sig),
+        Right(inner: Either<Signature, Signature>) => {
+            match inner {
+                Left(admin_sig: Signature) => admin_issue_certificate(admin_sig),
+                Right(delegate_sig: Signature) => delegate_issue_certificate(delegate_sig),
+            }
+        },
+    }
+}

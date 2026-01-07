@@ -53,6 +53,25 @@ class SAPProtocol:
     TYPE_UPDATE = 0x03
     TYPE_DELEGATE = 0x10
     TYPE_UNDELEGATE = 0x11
+
+    # Revocation reason codes (optional 1-byte extension)
+    REVOKE_REASON_CODES = {
+        1: "DATA_ERROR",
+        2: "DUPLICATE",
+        3: "FRAUD_SUSPECTED",
+        4: "FRAUD_CONFIRMED",
+        5: "HOLDER_REQUEST",
+        6: "REISSUE_REPLACEMENT",
+        7: "ADMINISTRATIVE",
+        8: "LEGAL_ORDER",
+        9: "KEY_COMPROMISE",
+        10: "SUSPENDED",
+        11: "CRYPTO_DEPRECATED",
+        12: "PROCESS_ERROR",
+        13: "RESERVED",
+        14: "RESERVED",
+        15: "RESERVED",
+    }
     
     # OP_RETURN size limits
     MAX_OP_RETURN_SIZE = 80  # Maximum OP_RETURN data size

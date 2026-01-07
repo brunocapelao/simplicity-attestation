@@ -70,7 +70,7 @@ Depende do TYPE:
 | TYPE | Payload |
 |------|---------|
 | ATTEST | CID IPFS (46-59 bytes) |
-| REVOKE | TXID:vout (34 bytes) |
+| REVOKE | TXID:vout (+ reason_code opcional) |
 | UPDATE | CID IPFS (46-59 bytes) |
 | DELEGATE | Pubkey do delegate (32 bytes) |
 | UNDELEGATE | Pubkey do delegate (32 bytes) |
@@ -98,11 +98,13 @@ HEX completo:
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAP     │ 01  │  02  │ <TXID>:<vout>                                   │
+│    SAP     │ 01  │  02  │ <TXID>:<vout>[:reason_code]                     │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
 │ 534150     │ 01  │  02  │ (34 bytes - 32 bytes TXID + 2 bytes vout)       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
 ```
+
+Se presente, `reason_code` é 1 byte adicional ao final do payload.
 
 ---
 

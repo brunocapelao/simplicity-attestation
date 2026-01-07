@@ -94,6 +94,37 @@ else:
     print("Certificate has been revoked")
 ```
 
+### 5. External Signing (Hardware Wallets / Multisig)
+
+For scenarios where private keys are managed externally (hardware wallets, multisig, custody):
+
+```python
+from sdk import SAPClient, SAPConfig
+from sdk.infra.hal import HalSimplicity
+
+client = SAPClient(
+    config=SAPConfig.from_file("config.json"),
+    hal=HalSimplicity("/path/to/hal-simplicity", network="liquid"),
+)
+
+# Step 1: Prepare transaction (SDK builds it, returns hash to sign)
+prepared = client.prepare_issue_certificate(cid="Qm...", issuer="admin")
+print(f"Hash to sign: {prepared.sig_hash}")
+print(f"Signer: {prepared.signer_role}")
+
+# Step 2: Get signature from external source
+signature = my_hardware_wallet.sign(prepared.sig_hash_bytes)  # 64-byte Schnorr
+
+# Step 3: Finalize and broadcast
+result = client.finalize_transaction(prepared, signature)
+print(f"TX: {result.txid}")
+```
+
+**Available preparation methods:**
+- `prepare_issue_certificate(cid, issuer)` — Issue certificate
+- `prepare_revoke_certificate(txid, vout, revoker)` — Revoke certificate  
+- `prepare_drain_vault(recipient)` — Drain vault (admin only)
+
 ## Legacy API
 
 For backwards compatibility:
@@ -101,8 +132,6 @@ For backwards compatibility:
 ```python
 from sdk import SAPClient
 
-# Local-only legacy config (do not commit):
-# copy `secrets.example.json` -> `secrets.json` and fill your keys/contracts.
 client = SAPClient.from_config("secrets.json")
 result = client.issue_certificate(cid="Qm...")
 ```

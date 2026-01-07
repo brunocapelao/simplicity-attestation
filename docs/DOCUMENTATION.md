@@ -522,7 +522,122 @@ docs/
     └── SDK.md              # SDK documentation (Portuguese)
 ```
 
-### 8.3 Simfony Pseudo-code
+### 8.3 External Signing (Hardware Wallets / Multisig / Custody)
+
+The SDK supports **external signing** for scenarios where private keys are managed outside the SDK:
+
+- **Hardware Wallets** (Ledger, Trezor, Coldcard)
+- **Multisig Ceremonies** (multiple signers required)
+- **Custodial Services** (keys held by third party)
+- **HSM Integration** (Hardware Security Modules)
+
+#### Workflow: Prepare → Sign Externally → Finalize
+
+```python
+from sdk import SAPClient, SAPConfig
+from sdk.infra.hal import HalSimplicity
+
+client = SAPClient(
+    config=SAPConfig.from_file("config.json"),
+    hal=HalSimplicity("/path/to/hal-simplicity", network="liquid"),
+)
+
+# ============================================
+# STEP 1: Prepare Transaction (SDK builds it)
+# ============================================
+prepared = client.prepare_issue_certificate(
+    cid="QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
+    issuer="admin"  # or "delegate"
+)
+
+# Display information for approval
+print(prepared.summary())
+"""
+=== ISSUE_CERTIFICATE ===
+Signer: admin
+Hash to sign: a1b2c3d4...e5f6g7h8
+cid: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
+vault_utxo: abc123:0
+vault_balance: 50000
+"""
+
+# Get the hash that needs to be signed
+sig_hash = prepared.sig_hash           # Hex string
+sig_hash_bytes = prepared.sig_hash_bytes  # 32-byte bytes
+
+# ============================================
+# STEP 2: Sign Externally
+# ============================================
+# Send sig_hash to your external signer:
+# - Hardware wallet via USB
+# - Multisig ceremony via PSBT sharing
+# - Custody API call
+# - HSM signing service
+
+signature = my_external_signer.sign(sig_hash_bytes)  # Returns 64-byte Schnorr sig
+
+# ============================================
+# STEP 3: Finalize and Broadcast
+# ============================================
+result = client.finalize_transaction(prepared, signature)
+
+if result.success:
+    print(f"Transaction broadcast: {result.txid}")
+else:
+    print(f"Error: {result.error}")
+```
+
+#### Available Preparation Methods
+
+| Method | Description | Signer |
+|--------|-------------|--------|
+| `prepare_issue_certificate(cid, issuer)` | Prepare certificate issuance | Admin or Delegate |
+| `prepare_revoke_certificate(txid, vout, revoker)` | Prepare revocation | Admin or Delegate |
+| `prepare_drain_vault(recipient)` | Prepare vault drain | Admin only |
+
+#### PreparedTransaction Object
+
+```python
+prepared.tx_type           # TransactionType enum (ISSUE, REVOKE, DRAIN)
+prepared.sig_hash          # 32-byte hash as hex string
+prepared.sig_hash_bytes    # 32-byte hash as bytes
+prepared.signer_role       # "admin" or "delegate"
+prepared.required_pubkey   # Expected signer's public key
+prepared.details           # Dict with human-readable operation details
+prepared.is_expired        # Check if transaction expired (optional timeout)
+prepared.summary()         # Human-readable summary for approval UI
+prepared.to_json()         # JSON serialization for API transport
+```
+
+#### Implementing an External Signer
+
+```python
+from sdk.prepared import ExternalSignerProtocol
+
+class MyHardwareWallet(ExternalSignerProtocol):
+    """Example external signer implementation."""
+    
+    def sign(self, message_hash: bytes) -> bytes:
+        """
+        Sign a 32-byte message hash.
+        
+        Args:
+            message_hash: 32-byte hash to sign (sig_hash from PreparedTransaction)
+        
+        Returns:
+            64-byte Schnorr signature
+        """
+        # Connect to hardware wallet
+        # Display message for user confirmation
+        # Return signature
+        return self.device.schnorr_sign(message_hash)
+    
+    def get_public_key(self) -> str:
+        """Get the signer's x-only public key (64 hex chars)."""
+        return self.device.get_public_key()
+```
+
+### 8.4 Simfony Pseudo-code
 
 **vault.simf:**
 ```rust

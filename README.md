@@ -179,17 +179,26 @@ delegate.revoke_certificate(result.txid, 1, reason_code=6)
 # admin.drain_vault(recipient="tex1...")
 
 # =============================================================================
-# OPTION 2 (Legacy): External signing with PreparedTransaction
+# OPTION 2: External Signing (Hardware Wallets / Multisig / Custody)
 # =============================================================================
+# Use this when private keys are managed externally (HSM, hardware wallet,
+# multisig ceremony, or custody provider). SDK builds the transaction and
+# provides the sig_hash for external signing.
 
 client = SAPClient(
-    # Local-only legacy config (do not commit):
-    # copy `secrets.example.json` -> `secrets.json` and fill your keys/contracts.
     config=SAPConfig.from_file("secrets.json"),
     hal=HalSimplicity(HAL_PATH, network="liquid"),
 )
+
+# Step 1: Prepare transaction (SDK builds it, returns hash to sign)
 prepared = client.prepare_issue_certificate(cid="Qm...", issuer="admin")
-signature = my_hardware_wallet.sign(prepared.sig_hash_bytes)
+print(f"Sign this hash: {prepared.sig_hash}")
+print(f"Required signer: {prepared.signer_role}")
+
+# Step 2: Get signature from external source
+signature = my_hardware_wallet.sign(prepared.sig_hash_bytes)  # 64-byte Schnorr
+
+# Step 3: Finalize and broadcast
 result = client.finalize_transaction(prepared, signature)
 ```
 

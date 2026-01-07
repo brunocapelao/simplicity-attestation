@@ -746,9 +746,9 @@ Response:
 ### Fase 1: MVP (Atual)
 - [x] P2PK basico com OP_RETURN
 - [x] Vault v1 (sem covenant de troco)
-- [ ] **Vault v2 com covenants enforced**
-- [ ] Certificate script
-- [ ] Scripts de emissao/revogacao
+- [x] **Vault v2 com covenants enforced**
+- [x] Certificate script
+- [x] Scripts de emissao/revogacao
 
 ### Fase 2: Producao
 - [ ] Indexador de certificados

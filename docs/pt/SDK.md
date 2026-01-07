@@ -562,6 +562,13 @@ except PayloadTooLargeError as e:
 
 ## Changelog
 
+### v0.6.0 (Current)
+- **Unified SAP API** with `SAP.create_vault()`, `SAP.as_admin()`, `SAP.as_delegate()`
+- Vault creation requires only PUBLIC keys
+- Role-based operation (Admin vs Delegate)
+- Automatic contract compilation with key injection
+- VaultConfig for sharing vault setup
+
 ### v0.5.0
 - Modelo de assinatura externa (prepare/finalize)
 - PreparedTransaction para multisig/HW wallets

@@ -86,25 +86,28 @@ python test_certificate_revoke.py --delegate
 ```
 
 ### SDK (E2E)
+
 ```python
-from sdk.sap import SAP
-from sdk import SAPClient
+from sdk import SAP
 
-# 1) Criar vault (config publica)
-config = SAP.create_vault(admin_pubkey, delegate_pubkey, network="testnet")
-config.save("network_config.json")
-
-# 2) Financiar o vault (externo)
-# 3) Emitir certificado
-client = SAPClient.from_config("secrets.json")
-issue = client.issue_certificate(cid="Qm...", issuer="delegate")
-
-# 4) Revogar com motivo e substituicao
-revoke = client.revoke_certificate(
-    issue.txid, 1,
-    reason_code=6,
-    replacement_txid="new_txid..."
+# 1) Criar vault (apenas chaves publicas)
+config = SAP.create_vault(
+    admin_pubkey="abc123...",
+    delegate_pubkey="def456...",
+    network="testnet"
 )
+config.save("vault_config.json")
+print(f"Financiar: {config.vault_address}")
+
+# 2) Operar como Admin
+admin = SAP.as_admin(config="vault_config.json", private_key="admin_secret...")
+result = admin.issue_certificate(cid="QmYwAPJzv5...")
+admin.drain_vault(recipient="tex1...")  # Desativar delegado
+
+# 3) Operar como Delegado (entidade diferente)
+delegate = SAP.as_delegate(config="vault_config.json", private_key="delegate_secret...")
+result = delegate.issue_certificate(cid="QmNewCert...")
+delegate.revoke_certificate(result.txid, 1, reason_code=6)
 ```
 
 ### Execucao E2E recente (testnet)

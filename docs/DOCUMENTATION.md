@@ -64,7 +64,7 @@ SAP is an on-chain digital certificate system that uses Simplicity on the Liquid
   │                                                                             │
   │  ACTION                              │  ADMIN  │  DELEGATE  │              │
   │  ──────────────────────────────────┼─────────┼────────────┤              │
-  │  Issue certificate (vault)          │   ❌    │     ✅     │              │
+  │  Issue certificate (vault)          │   ✅    │     ✅     │              │
   │  Revoke certificate                  │   ✅    │     ✅     │              │
   │  Deactivate delegate (drain)         │   ✅    │     ❌     │              │
   │  Spend vault unconditionally         │   ✅    │     ❌     │              │
@@ -76,7 +76,7 @@ SAP is an on-chain digital certificate system that uses Simplicity on the Liquid
   │  Admin (Supreme Authority)                                                  │
   │    ├── Can deactivate Delegate at any time                                 │
   │    ├── Can revoke any certificate                                          │
-  │    └── CANNOT issue certificate (by design)                                │
+  │    └── Can issue certificates (with covenants via Right-Left path)         │
   │                                                                             │
   │  Delegate (Delegated Authority)                                             │
   │    ├── Can issue certificates (while vault has funds)                      │
@@ -92,12 +92,13 @@ SAP is an on-chain digital certificate system that uses Simplicity on the Liquid
           ┌─────────────┼─────────────┐
           │             │             │
           ▼             ▼             ▼
-     DEACTIVATE      REVOKE       (no issue)
-     DELEGATE     CERTIFICATE
-          │             │
-          ▼             ▼
-     Empty vault   Cert UTXO
-                    spent
+     DEACTIVATE      REVOKE        ISSUE
+     DELEGATE     CERTIFICATE   CERTIFICATE
+          │             │        (w/covenants)
+          ▼             ▼             │
+     Empty vault   Cert UTXO          ▼
+                    spent        New Cert
+                                   UTXO
 
 
                     DELEGATE
@@ -342,7 +343,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Value: input - cert_amount - fee                       │    │
 │     │                                                                  │    │
 │     │ Output 1: Certificate UTXO → Certificate Address                │    │
-│     │           Value: 1000 sats (minimum)                            │    │
+│     │           Valor: 546 sats (dust)                                │    │
 │     │                                                                  │    │
 │     │ Output 2: OP_RETURN                                             │    │
 │     │           Data: SAP 01 01 <IPFS_CID>                            │    │

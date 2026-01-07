@@ -23,16 +23,16 @@ O protocolo SAP define um formato padronizado para armazenar referências a ates
 │                                                                              │
 │   ┌────────┬─────────┬──────────┬────────────────────────────────────────┐  │
 │   │  TAG   │ VERSION │  TYPE    │              PAYLOAD                    │  │
-│   │ 4 bytes│ 1 byte  │  1 byte  │           (variable)                    │  │
+│   │ 3 bytes│ 1 byte  │  1 byte  │           (variable)                    │  │
 │   └────────┴─────────┴──────────┴────────────────────────────────────────┘  │
 │                                                                              │
-│   Total: 6 bytes de header + payload (CID)                                   │
-│   Máximo OP_RETURN: ~80 bytes → ~74 bytes para payload                       │
+│   Total: 5 bytes de header + payload (CID)                                   │
+│   Máximo OP_RETURN: ~80 bytes → ~75 bytes para payload                       │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.1 TAG (4 bytes)
+### 2.1 TAG (3 bytes)
 
 **Magic bytes** para identificar o protocolo Simplicity Attestation:
 
@@ -139,15 +139,15 @@ def index_transaction(tx):
         data = output.script_data
         
         # Verificar magic bytes
-        if len(data) < 6:
+        if len(data) < 5:
             continue
-        if data[0:4] != b'SAP\x00':
+        if data[0:3] != b'SAP':
             continue
             
         # Parse header
-        version = data[4]
-        op_type = data[5]
-        payload = data[6:]
+        version = data[3]
+        op_type = data[4]
+        payload = data[5:]
         
         if version != 0x01:
             log(f"Versão desconhecida: {version}")
@@ -195,10 +195,10 @@ let maybe_datum = jet::output_null_datum(2, 0);
 |------------|---------|-----------|
 | OP_RETURN max | 80 bytes | - |
 | TAG (SAP) | 3 bytes | 3 |
-| VERSION | 1 byte | 5 |
-| TYPE | 1 byte | 6 |
-| CIDv0 | 46 bytes | 52 |
-| **Sobra** | 28 bytes | - |
+| VERSION | 1 byte | 4 |
+| TYPE | 1 byte | 5 |
+| CIDv0 | 46 bytes | 51 |
+| **Sobra** | 29 bytes | - |
 
 Para CIDv1 (mais longo), ainda cabe confortavelmente.
 

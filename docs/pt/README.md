@@ -2,6 +2,8 @@
 
 Sistema de certificados on-chain com delegacao hierarquica usando Simplicity na Liquid Network.
 
+Documentacao principal (Ingles): `docs/DOCUMENTATION.md`.
+
 ## Arquitetura
 
 ```
@@ -50,9 +52,11 @@ tests/
 ├── test_certificate_revoke.py
 └── test_edge_cases.py      # Testes de seguranca
 
-docs/
-├── PROTOCOL_SPEC.md        # Especificacao SAP
-└── DOCUMENTACAO.md         # Documentacao completa
+docs/pt/
+├── README.md               # Este guia (Portugues)
+├── DOCUMENTACAO.md         # Documentacao completa (Portugues)
+├── PROTOCOL_SPEC.md        # Especificacao SAP (Portugues)
+└── SDK.md                  # Documentacao do SDK (Portugues)
 
 secrets.json                # Chaves e enderecos (testnet)
 ```
@@ -151,4 +155,4 @@ Chaves completas em `secrets.json`.
 
 ---
 
-[English Version](README_EN.md)
+[English Version](../../README.md)

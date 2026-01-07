@@ -2,6 +2,8 @@
 
 On-chain certificate system with hierarchical delegation using Simplicity on Liquid Network.
 
+Primary documentation is in English under `docs/DOCUMENTATION.md`. Portuguese is in `docs/pt/README.md`.
+
 ## Architecture
 
 ```
@@ -52,9 +54,12 @@ tests/
 
 docs/
 ├── DOCUMENTATION.md        # Full documentation (English)
-├── DOCUMENTACAO.md         # Full documentation (Portuguese)
-├── PROTOCOL_SPEC_EN.md     # SAP specification (English)
-└── PROTOCOL_SPEC.md        # SAP specification (Portuguese)
+├── PROTOCOL_SPEC.md        # SAP specification (English)
+└── pt/
+    ├── README.md           # Guia em Portugues
+    ├── DOCUMENTACAO.md     # Documentacao completa (Portugues)
+    ├── PROTOCOL_SPEC.md    # SAP specification (Portugues)
+    └── SDK.md              # SDK documentation (Portugues)
 
 secrets.json                # Keys and addresses (testnet)
 ```
@@ -153,4 +158,4 @@ Full keys in `secrets.json`.
 
 ---
 
-[Documentação em Português](README.md)
+[Documentação em Português](docs/pt/README.md)

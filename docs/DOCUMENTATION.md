@@ -514,8 +514,11 @@ tests/
 
 docs/
 ├── DOCUMENTATION.md        # This specification (English)
-├── DOCUMENTACAO.md         # Specification (Portuguese)
-└── PROTOCOL_SPEC.md        # SAP protocol specification
+├── PROTOCOL_SPEC.md        # SAP protocol specification (English)
+└── pt/
+    ├── DOCUMENTACAO.md     # Specification (Portuguese)
+    ├── PROTOCOL_SPEC.md    # SAP protocol specification (Portuguese)
+    └── SDK.md              # SDK documentation (Portuguese)
 ```
 
 ### 8.3 Simfony Pseudo-code

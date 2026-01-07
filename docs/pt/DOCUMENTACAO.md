@@ -556,7 +556,7 @@ Explorer:
 ### 7.2 Vetores de Ataque Mitigados
 
 1. **Delegado desvia troco**: Impossivel - covenant verifica destino
-2. **Delegado cria certificate falso**: Impossivel - script_pubkey verificado
+2. **Delegado cria certificado falso**: Impossivel - script_pubkey verificado
 3. **Terceiro revoga certificado**: Impossivel - requer assinatura Admin ou Delegate
 4. **Double-spend de certificado**: Impossivel - modelo UTXO previne
 
@@ -592,8 +592,11 @@ tests/
 
 docs/
 ├── DOCUMENTATION.md        # Esta especificacao (Ingles)
-├── DOCUMENTACAO.md         # Esta especificacao (Portugues)
-└── PROTOCOL_SPEC.md        # Especificacao do protocolo SAP
+├── PROTOCOL_SPEC.md        # Especificacao do protocolo SAP (Ingles)
+└── pt/
+    ├── DOCUMENTACAO.md     # Esta especificacao (Portugues)
+    ├── PROTOCOL_SPEC.md    # Especificacao do protocolo SAP (Portugues)
+    └── SDK.md              # Documentacao do SDK (Portugues)
 
 secrets.json                # Chaves e enderecos (testnet)
 ```
@@ -614,7 +617,7 @@ const ADMIN_PUBKEY: Pubkey = 0x...;
 const DELEGATE_PUBKEY: Pubkey = 0x...;
 const CERTIFICATE_SCRIPT_HASH: u256 = 0x...; // Hash do script do certificate
 const VAULT_SCRIPT_HASH: u256 = 0x...;       // Hash do proprio script (self-ref)
-const CERT_MIN_AMOUNT: u64 = 1000;           // Minimo para certificate
+const CERT_MIN_AMOUNT: u64 = 546;            // Minimo para certificado (dust)
 
 fn checksig(pk: Pubkey, sig: Signature) {
     let msg: u256 = jet::sig_all_hash();
@@ -634,7 +637,7 @@ fn delegate_spend(delegate_sig: Signature) {
     let output0_script: u256 = jet::output_script_hash(0);
     assert!(output0_script == VAULT_SCRIPT_HASH);
 
-    // 3. COVENANT: Output 1 deve ir para certificate script
+    // 3. COVENANT: Output 1 deve ir para script do certificado
     let output1_script: u256 = jet::output_script_hash(1);
     assert!(output1_script == CERTIFICATE_SCRIPT_HASH);
 

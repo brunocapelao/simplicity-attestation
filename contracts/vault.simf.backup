@@ -34,7 +34,7 @@ fn checksig(pk: Pubkey, sig: Signature) {
 // =============================================================================
 
 fn admin_unconditional(admin_sig: Signature) {
-    let admin_pk: Pubkey = 0x37b15eb62598bc3fe69f3fb2197de0a8107db1ac799aa6b8256faa7f2bfd18fb;
+    let admin_pk: Pubkey = 0xbcc13efe121b35c7270c41ce63dab7688c0326c58c5f5e1d1af317c1503cad45;
     checksig(admin_pk, admin_sig);
 }
 
@@ -105,7 +105,7 @@ fn admin_issue_certificate(admin_sig: Signature) {
     issue_certificate_with_covenants();
 
     // Then validate Admin signature
-    let admin_pk: Pubkey = 0x37b15eb62598bc3fe69f3fb2197de0a8107db1ac799aa6b8256faa7f2bfd18fb;
+    let admin_pk: Pubkey = 0xbcc13efe121b35c7270c41ce63dab7688c0326c58c5f5e1d1af317c1503cad45;
     checksig(admin_pk, admin_sig);
 }
 
@@ -118,7 +118,7 @@ fn delegate_issue_certificate(delegate_sig: Signature) {
     issue_certificate_with_covenants();
 
     // Then validate Delegate signature
-    let delegate_pk: Pubkey = 0x5556444fc719ed4051fafa2a91472540bbf8aa9ee41f0b2e17d26cc860a26f7d;
+    let delegate_pk: Pubkey = 0x8577f4e053850a2eb0c86ce4c81215fdec681c28e01648f4401e0c47a4276413;
     checksig(delegate_pk, delegate_sig);
 }
 

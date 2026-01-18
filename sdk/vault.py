@@ -1,5 +1,5 @@
 """
-SAP SDK - Vault Builder
+SAS SDK - Vault Builder
 
 Functions for creating and funding vaults.
 Handles contract compilation and initial setup.
@@ -86,7 +86,7 @@ class VaultSetup:
 
 class VaultBuilder:
     """
-    Builder for creating new SAP vaults.
+    Builder for creating new SAS vaults.
     
     Handles:
     - Compiling Simfony contracts with provided keys
@@ -115,7 +115,7 @@ class VaultBuilder:
     
     # Default contract templates
     VAULT_TEMPLATE = """
-// SAP Delegation Vault Contract
+// SAS Delegation Vault Contract
 // Admin: {admin_pubkey}
 // Delegate: {delegate_pubkey}
 
@@ -166,7 +166,7 @@ fn main() {{
         certificate_contract_path: Optional[str] = None
     ) -> VaultSetup:
         """
-        Create a new SAP vault.
+        Create a new SAS vault.
         
         This compiles the contracts with the provided keys and returns
         all needed configuration to use the vault.

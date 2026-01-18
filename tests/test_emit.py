@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAP - Emission / Drain (E2E)
+SAS - Emission / Drain (E2E)
 
 This script is intentionally "local-only" friendly:
 - No private keys are committed to the repo.
@@ -11,12 +11,12 @@ Prerequisites:
 - Fund the generated vault address on Liquid Testnet before issuing
 
 Env vars:
-- SAP_ADMIN_PRIVATE_KEY: 64-hex private key (admin)
-- SAP_DELEGATE_PRIVATE_KEY: 64-hex private key (delegate)
-- SAP_NETWORK: testnet|mainnet (default: testnet)
-- SAP_VAULT_CONFIG: path to vault config json (default: vault_config.json)
-- SAP_HAL_PATH: path to hal-simplicity binary (default: ./hal-simplicity/target/release/hal-simplicity)
-- SAP_SIMC_PATH: path to simc binary (default: ./simfony/target/release/simc)
+- SAS_ADMIN_PRIVATE_KEY: 64-hex private key (admin)
+- SAS_DELEGATE_PRIVATE_KEY: 64-hex private key (delegate)
+- SAS_NETWORK: testnet|mainnet (default: testnet)
+- SAS_VAULT_CONFIG: path to vault config json (default: vault_config.json)
+- SAS_HAL_PATH: path to hal-simplicity binary (default: ./hal-simplicity/target/release/hal-simplicity)
+- SAS_SIMC_PATH: path to simc binary (default: ./simfony/target/release/simc)
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from embit import ec
 
-from sdk import SAP
-from sdk.sap import VaultConfig
+from sdk import SAS
+from sdk.sas import VaultConfig
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -60,7 +60,7 @@ def _load_or_create_config(
     admin_pubkey = _xonly_pubkey_from_private_key(admin_private_key)
     delegate_pubkey = _xonly_pubkey_from_private_key(delegate_private_key)
 
-    config = SAP.create_vault(
+    config = SAS.create_vault(
         admin_pubkey=admin_pubkey,
         delegate_pubkey=delegate_pubkey,
         network=network,
@@ -81,16 +81,16 @@ def main() -> int:
     parser.add_argument("--recipient", help="Recipient address for drain")
     args = parser.parse_args()
 
-    network = _env("SAP_NETWORK", "testnet")
-    config_path = Path(_env("SAP_VAULT_CONFIG", "vault_config.json"))
-    hal_path = _env("SAP_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
-    simc_path = _env("SAP_SIMC_PATH", "./simfony/target/release/simc")
+    network = _env("SAS_NETWORK", "testnet")
+    config_path = Path(_env("SAS_VAULT_CONFIG", "vault_config.json"))
+    hal_path = _env("SAS_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
+    simc_path = _env("SAS_SIMC_PATH", "./simfony/target/release/simc")
 
-    admin_private_key = _env("SAP_ADMIN_PRIVATE_KEY")
-    delegate_private_key = _env("SAP_DELEGATE_PRIVATE_KEY")
+    admin_private_key = _env("SAS_ADMIN_PRIVATE_KEY")
+    delegate_private_key = _env("SAS_DELEGATE_PRIVATE_KEY")
     if not admin_private_key or not delegate_private_key:
         print(
-            "Missing keys. Set SAP_ADMIN_PRIVATE_KEY and SAP_DELEGATE_PRIVATE_KEY (64-hex).",
+            "Missing keys. Set SAS_ADMIN_PRIVATE_KEY and SAS_DELEGATE_PRIVATE_KEY (64-hex).",
             file=sys.stderr,
         )
         return 2
@@ -113,18 +113,18 @@ def main() -> int:
         if not args.recipient:
             print("--recipient is required for --admin-unconditional", file=sys.stderr)
             return 2
-        admin = SAP.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
+        admin = SAS.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
         result = admin.drain_vault(recipient=args.recipient)
         print(result)
         return 0 if result.success else 1
 
     if args.admin_issue:
-        admin = SAP.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
+        admin = SAS.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
         result = admin.issue_certificate(cid=args.cid)
         print(result)
         return 0 if result.success else 1
 
-    delegate = SAP.as_delegate(str(config_path), private_key=delegate_private_key, hal_path=hal_path)
+    delegate = SAS.as_delegate(str(config_path), private_key=delegate_private_key, hal_path=hal_path)
     result = delegate.issue_certificate(cid=args.cid)
     print(result)
     return 0 if result.success else 1

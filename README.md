@@ -1,4 +1,4 @@
-# SAP — Simplicity Attestation Protocol
+# SAS — Simplicity Attestation Protocol
 
 <div align="center">
 
@@ -17,7 +17,7 @@
 
 ## Overview
 
-SAP is a **decentralized digital certificate system** that leverages Simplicity's unique capabilities on Liquid Network to provide:
+SAS is a **decentralized digital certificate system** that leverages Simplicity's unique capabilities on Liquid Network to provide:
 
 - **Trustless Verification** — Certificate validity is determined by UTXO existence, not trusted third parties
 - **Instant Revocation** — Spend the UTXO = certificate revoked (no CRL/OCSP delays)
@@ -34,7 +34,7 @@ On **July 31, 2025**, Blockstream launched Simplicity—culminating 8 years of r
 > *"If adopted on Bitcoin in the future, Simplicity could position Bitcoin as a programmable settlement layer for all institutional-grade finance."*
 > — **Andrew Poelstra**, Director of Research at Blockstream
 
-| 🎯 Simplicity Feature | SAP Implementation | Status |
+| 🎯 Simplicity Feature | SAS Implementation | Status |
 |:---------------------|:-------------------|:------:|
 | **Covenants** | Self-referential vault with enforced output constraints | ✅ Production |
 | **Vaults** | Delegation Vault with 3 spending paths | ✅ Production |
@@ -69,7 +69,7 @@ On **July 31, 2025**, Blockstream launched Simplicity—culminating 8 years of r
 │                                 │                                  │          │
 │                                 │  ✓ Output 0 → Vault (self-ref)  │          │
 │                                 │  ✓ Output 1 → Certificate Script│          │
-│                                 │  ✓ Output 2 → OP_RETURN (SAP)   │          │
+│                                 │  ✓ Output 2 → OP_RETURN (SAS)   │          │
 │                                 │  ✓ Output 3 → Fee               │          │
 │                                 └──────────────────────────────────┘          │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -118,7 +118,7 @@ All operations have been successfully tested on Liquid Testnet:
 
 ### Installation
 
-> **Important / Importante:** For SAP to work correctly, use the patched `hal-simplicity` from https://github.com/brunocapelao/hal-simplicity (includes required fixes).
+> **Important / Importante:** For SAS to work correctly, use the patched `hal-simplicity` from https://github.com/brunocapelao/hal-simplicity (includes required fixes).
 
 ```bash
 # Clone the repository
@@ -144,7 +144,7 @@ export PATH="$PWD/hal-simplicity/target/release:$PWD/simfony/target/release:$PAT
 ### SDK Usage
 
 ```python
-from sdk import SAP, SAPClient, SAPConfig
+from sdk import SAS, SAPClient, SASConfig
 from sdk.infra.hal import HalSimplicity
 
 # =============================================================================
@@ -155,7 +155,7 @@ HAL_PATH = "./hal-simplicity/target/release/hal-simplicity"
 SIMC_PATH = "./simfony/target/release/simc"
 
 # Admin creates vault configuration (public keys only)
-config = SAP.create_vault(
+config = SAS.create_vault(
     admin_pubkey="abc123...",
     delegate_pubkey="def456...",
     network="testnet",
@@ -166,12 +166,12 @@ config.save("vault_config.json")
 print(f"Fund vault: {config.vault_address}")
 
 # Admin operates with their private key
-admin = SAP.as_admin(config="vault_config.json", private_key="admin_secret...", hal_path=HAL_PATH)
+admin = SAS.as_admin(config="vault_config.json", private_key="admin_secret...", hal_path=HAL_PATH)
 result = admin.issue_certificate(cid="QmYwAPJzv5...")
 print(f"Issued certificate tx: {result.txid}")
 
 # Delegate operates independently
-delegate = SAP.as_delegate(config="vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
+delegate = SAS.as_delegate(config="vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
 result = delegate.issue_certificate(cid="QmNewCert...")
 delegate.revoke_certificate(result.txid, 1, reason_code=6)
 
@@ -186,7 +186,7 @@ delegate.revoke_certificate(result.txid, 1, reason_code=6)
 # provides the sig_hash for external signing.
 
 client = SAPClient(
-    config=SAPConfig.from_file("secrets.json"),
+    config=SASConfig.from_file("secrets.json"),
     hal=HalSimplicity(HAL_PATH, network="liquid"),
 )
 
@@ -205,10 +205,10 @@ result = client.finalize_transaction(prepared, signature)
 ### CLI Usage
 
 ```bash
-export SAP_ADMIN_PRIVATE_KEY="<64-hex>"
-export SAP_DELEGATE_PRIVATE_KEY="<64-hex>"
-export SAP_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
-export SAP_SIMC_PATH="./simfony/target/release/simc"
+export SAS_ADMIN_PRIVATE_KEY="<64-hex>"
+export SAS_DELEGATE_PRIVATE_KEY="<64-hex>"
+export SAS_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
+export SAS_SIMC_PATH="./simfony/target/release/simc"
 
 cd tests
 
@@ -224,14 +224,14 @@ python test_certificate_revoke.py --delegate
 
 ---
 
-## SAP Protocol (OP_RETURN)
+## SAS Protocol (OP_RETURN)
 
 Standardized format for certificate metadata stored on-chain:
 
 ```
 ┌────────┬─────────┬──────────┬────────────────────────────────────┐
 │  TAG   │ VERSION │   TYPE   │            PAYLOAD                 │
-│ "SAP"  │  0x01   │  0x01    │   CID/identifier (≤75 bytes)      │
+│ "SAS"  │  0x01   │  0x01    │   CID/identifier (≤75 bytes)      │
 ├────────┼─────────┼──────────┼────────────────────────────────────┤
 │ 3 bytes│ 1 byte  │  1 byte  │          variable                  │
 └────────┴─────────┴──────────┴────────────────────────────────────┘
@@ -250,7 +250,7 @@ Standardized format for certificate metadata stored on-chain:
 ## Explorer Examples (Didactic)
 
 - Valid certificate (issuance creates the certificate UTXO at `vout=1`): `https://blockstream.info/liquidtestnet/tx/2785aac5ea950c54ece28b1fbfdeb5acf29903fed89ecbb78ba997fe0b927fcb`
-  - OP_RETURN (issuance is enforced at `vout=2` by the vault covenant): `534150010145582d4e45572d31373637373936313938` → `SAP|01|01|EX-NEW-1767796198`
+  - OP_RETURN (issuance is enforced at `vout=2` by the vault covenant): `534150010145582d4e45572d31373637373936313938` → `SAS|01|01|EX-NEW-1767796198`
 - Revoked + replacement (revoke includes `reason_code=6` and points to a new issuance txid): `https://blockstream.info/liquidtestnet/tx/625dcfdac2ca7a2ddfb857254459c46e17939c7785c3e20c21f3ea33fb5be729`
   - OP_RETURN (`vout=1` in this example): `5341500102` + `<old_txid>` + `0001` + `06` + `<replacement_txid>`
   - Decoded: `old_txid=912a79b929e331cfaf02727cd9f3282c8f87dd4a7af502c2ccf765feb5c12444`, `vout=1`, `reason_code=6 (REISSUE_REPLACEMENT)`, `replacement_txid=2785aac5ea950c54ece28b1fbfdeb5acf29903fed89ecbb78ba997fe0b927fcb`
@@ -259,13 +259,13 @@ Standardized format for certificate metadata stored on-chain:
 
 ## Simplicity Jets Used
 
-| Jet | Purpose | SAP Usage |
+| Jet | Purpose | SAS Usage |
 |:----|:--------|:----------|
 | `jet::sig_all_hash()` | Compute transaction sighash | Signature verification |
 | `jet::bip_0340_verify()` | Verify Schnorr signature | Authentication |
 | `jet::current_script_hash()` | Get CMR of current script | **Self-reference covenant** |
 | `jet::output_script_hash()` | Get hash of output script | Destination enforcement |
-| `jet::output_null_datum()` | Read OP_RETURN data | SAP protocol data |
+| `jet::output_null_datum()` | Read OP_RETURN data | SAS protocol data |
 | `jet::output_is_fee()` | Check if output is fee | Structure validation |
 | `jet::num_outputs()` | Count transaction outputs | Structure validation |
 
@@ -305,7 +305,7 @@ Standardized format for certificate metadata stored on-chain:
 │   └── certificate.simf        # Certificate UTXO script
 │
 ├── sdk/                        # Python SDK v0.6.0
-│   ├── sap.py                  # Main SAP class
+│   ├── sas.py                  # Main SAS class
 │   ├── client.py               # Legacy client
 │   ├── config.py               # Configuration management
 │   ├── prepared.py             # External signing support
@@ -323,7 +323,7 @@ Standardized format for certificate metadata stored on-chain:
 │
 ├── docs/
 │   ├── DOCUMENTATION.md        # Technical specification (EN)
-│   ├── PROTOCOL_SPEC.md        # SAP protocol spec (EN)
+│   ├── PROTOCOL_SPEC.md        # SAS protocol spec (EN)
 │   └── pt/                     # Portuguese documentation
 │
 └── secrets.example.json        # Template (do not commit real keys)

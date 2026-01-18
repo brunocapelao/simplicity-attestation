@@ -1,5 +1,5 @@
 """
-SAP SDK - Data Models
+SAS SDK - Data Models
 
 Core data structures used throughout the SDK.
 """
@@ -49,7 +49,7 @@ class UTXO:
 
 @dataclass
 class Certificate:
-    """Represents a SAP certificate."""
+    """Represents a SAS certificate."""
     txid: str
     vout: int
     cid: str
@@ -72,7 +72,7 @@ class Certificate:
 
 @dataclass
 class Vault:
-    """Represents a SAP delegation vault."""
+    """Represents a SAS delegation vault."""
     address: str
     script_pubkey: str
     cmr: str

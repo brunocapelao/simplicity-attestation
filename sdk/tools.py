@@ -1,5 +1,5 @@
 """
-SAP SDK - Tool Manager
+SAS SDK - Tool Manager
 
 Manages external binary dependencies (hal-simplicity, simc).
 Downloads and caches binaries automatically on first use.
@@ -37,7 +37,7 @@ TOOLS: Dict[str, ToolInfo] = {
         description="Simplicity PSET toolchain for Liquid",
         urls={
             # Note: keep this empty until binaries are published as releases.
-            # In the meantime, install from source and ensure it's in PATH or set SAP_HAL_PATH:
+            # In the meantime, install from source and ensure it's in PATH or set SAS_HAL_PATH:
             #   git clone https://github.com/brunocapelao/hal-simplicity.git
             #   (cd hal-simplicity && cargo build --release)
         },
@@ -53,7 +53,7 @@ TOOLS: Dict[str, ToolInfo] = {
         description="Simfony compiler (Simfony -> Simplicity)",
         urls={
             # Note: keep this empty until binaries are published as releases.
-            # In the meantime, install from source and ensure it's in PATH or set SAP_SIMC_PATH:
+            # In the meantime, install from source and ensure it's in PATH or set SAS_SIMC_PATH:
             #   git clone https://github.com/BlockstreamResearch/simfony.git
             #   (cd simfony && cargo build --release)
         },

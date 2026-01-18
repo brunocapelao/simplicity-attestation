@@ -1,5 +1,5 @@
 """
-SAP SDK - Event Hooks
+SAS SDK - Event Hooks
 
 Event system for before/after operation callbacks.
 """
@@ -237,7 +237,7 @@ def create_logging_hook(logger: logging.Logger) -> EventHandler:
         Event handler function.
     """
     def handler(event: Event) -> None:
-        logger.info(f"[SAP] {event.type.value}: {event.data}")
+        logger.info(f"[SAS] {event.type.value}: {event.data}")
     return handler
 
 

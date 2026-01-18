@@ -1,5 +1,5 @@
 """
-SAP SDK - Contract Registry
+SAS SDK - Contract Registry
 
 Manages contract information and provides contract-specific utilities.
 """
@@ -7,7 +7,7 @@ Manages contract information and provides contract-specific utilities.
 from dataclasses import dataclass
 from typing import Optional
 
-from ..config import SAPConfig
+from ..config import SASConfig
 
 
 @dataclass
@@ -26,17 +26,17 @@ class Contract:
 
 class ContractRegistry:
     """
-    Registry of SAP contracts.
+    Registry of SAS contracts.
     
     Provides access to vault and certificate contract information.
     """
     
-    def __init__(self, config: SAPConfig):
+    def __init__(self, config: SASConfig):
         """
         Initialize registry from config.
         
         Args:
-            config: SAP configuration.
+            config: SAS configuration.
         """
         self.config = config
         

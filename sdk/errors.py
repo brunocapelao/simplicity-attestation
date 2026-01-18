@@ -1,5 +1,5 @@
 """
-SAP SDK - Error Types
+SAS SDK - Error Types
 
 Specific exception classes for better error handling and debugging.
 """
@@ -8,7 +8,7 @@ from typing import Optional, List
 
 
 class SAPError(Exception):
-    """Base exception for all SAP SDK errors."""
+    """Base exception for all SAS SDK errors."""
     
     def __init__(self, message: str, details: Optional[dict] = None):
         super().__init__(message)

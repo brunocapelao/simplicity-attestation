@@ -1,4 +1,4 @@
-# SAP - Simplicity Attestation Protocol
+# SAS - Simplicity Attestation Protocol
 
 ## On-Chain Certificate System with Delegation via Simplicity
 
@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-SAP is an on-chain digital certificate system that uses Simplicity on the Liquid Network to:
+SAS is an on-chain digital certificate system that uses Simplicity on the Liquid Network to:
 
 1. **Admin** (Root Authority) creates delegation vaults
 2. **Delegate** issues certificates by spending from the vault
@@ -19,7 +19,7 @@ SAP is an on-chain digital certificate system that uses Simplicity on the Liquid
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SAP CHAIN OF TRUST                                │
+│                           SAS CHAIN OF TRUST                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │   ADMIN (Root Authority)                                                    │
@@ -38,7 +38,7 @@ SAP is an on-chain digital certificate system that uses Simplicity on the Liquid
 │              │                                                              │
 │              ├── Output 0: Change → Vault V (ENFORCED by script)           │
 │              ├── Output 1: Certificate UTXO → Script C                     │
-│              ├── Output 2: OP_RETURN with SAP payload (CID/identifier)     │
+│              ├── Output 2: OP_RETURN with SAS payload (CID/identifier)     │
 │              └── Output 3: Fee                                              │
 │                       │                                                     │
 │                       ▼                                                     │
@@ -164,7 +164,7 @@ def verify_certificate(txid: str, vout: int) -> bool:
 |-----------|------|-------------|
 | **Delegation Vault (V)** | Simplicity Script | Funding pool for certificate issuance |
 | **Certificate (C)** | Simplicity Script | UTXO representing a valid certificate |
-| **OP_RETURN** | Data | SAP payload with CID/identifier for the certificate |
+| **OP_RETURN** | Data | SAS payload with CID/identifier for the certificate |
 | **Admin Key** | Schnorr Pubkey | Root authority of the system |
 | **Delegate Key** | Schnorr Pubkey | Delegated authority to issue certificates |
 
@@ -229,7 +229,7 @@ Simple script that allows Admin OR Delegate to spend (revoke):
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  Note: The act of spending this UTXO = revoking the certificate            │
-│  Optionally may include OP_RETURN with SAP type REVOKE                     │
+│  Optionally may include OP_RETURN with SAS type REVOKE                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -346,7 +346,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Valor: 546 sats (dust)                                │    │
 │     │                                                                  │    │
 │     │ Output 2: OP_RETURN                                             │    │
-│     │           Data: SAP 01 01 <CID_OR_IDENTIFIER>                    │    │
+│     │           Data: SAS 01 01 <CID_OR_IDENTIFIER>                    │    │
 │     │                                                                  │    │
 │     │ Output 3: Fee                                                   │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -377,7 +377,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │ Output 0: Any address (recovers the sats)                       │    │
 │     │                                                                  │    │
 │     │ Output 1: OP_RETURN (optional)                                  │    │
-│     │           Data: SAP 01 02 <ORIGINAL_TXID:VOUT>                  │    │
+│     │           Data: SAS 01 02 <ORIGINAL_TXID:VOUT>                  │    │
 │     │                                                                  │    │
 │     │ Output 2: Fee                                                   │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -421,14 +421,14 @@ disconnect(committed_expr, disconnected_expr_cmr)
 
 ---
 
-## 6. SAP Protocol (OP_RETURN)
+## 6. SAS Protocol (OP_RETURN)
 
 ### 6.1 Format
 
 ```
 ┌───────┬─────────┬──────────┬─────────────────────────────────────┐
 │  TAG  │ VERSION │   TYPE   │             PAYLOAD                 │
-│ "SAP" │  0x01   │  0x01    │   CID/identifier (≤75 bytes)       │
+│ "SAS" │  0x01   │  0x01    │   CID/identifier (≤75 bytes)       │
 ├───────┼─────────┼──────────┼─────────────────────────────────────┤
 │3 bytes│ 1 byte  │  1 byte  │           variable                  │
 └───────┴─────────┴──────────┴─────────────────────────────────────┘
@@ -450,7 +450,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │ │ └── CID: QmYwAP...
 │     │ └──── Type: ATTEST (0x01)
 │     └────── Version: 1
-└──────────── Magic: "SAP"
+└──────────── Magic: "SAS"
 ```
 
 **Revocation:**
@@ -459,7 +459,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │ │ └── Referenced TXID:VOUT
 │     │ └──── Type: REVOKE (0x02)
 │     └────── Version: 1
-└──────────── Magic: "SAP"
+└──────────── Magic: "SAS"
 ```
 
 ---
@@ -515,10 +515,10 @@ tests/
 
 docs/
 ├── DOCUMENTATION.md        # This specification (English)
-├── PROTOCOL_SPEC.md        # SAP protocol specification (English)
+├── PROTOCOL_SPEC.md        # SAS protocol specification (English)
 └── pt/
     ├── DOCUMENTACAO.md     # Specification (Portuguese)
-    ├── PROTOCOL_SPEC.md    # SAP protocol specification (Portuguese)
+    ├── PROTOCOL_SPEC.md    # SAS protocol specification (Portuguese)
     └── SDK.md              # SDK documentation (Portuguese)
 ```
 
@@ -534,11 +534,11 @@ The SDK supports **external signing** for scenarios where private keys are manag
 #### Workflow: Prepare → Sign Externally → Finalize
 
 ```python
-from sdk import SAPClient, SAPConfig
+from sdk import SAPClient, SASConfig
 from sdk.infra.hal import HalSimplicity
 
 client = SAPClient(
-    config=SAPConfig.from_file("config.json"),
+    config=SASConfig.from_file("config.json"),
     hal=HalSimplicity("/path/to/hal-simplicity", network="liquid"),
 )
 
@@ -748,7 +748,7 @@ def verify_certificate(cert_txid: str, cert_vout: int = 1) -> dict:
     tx = get_transaction(cert_txid)
     op_return_data = parse_op_return(tx.outputs[2])
 
-    # 3. Decode SAP
+    # 3. Decode SAS
     sap = decode_sap(op_return_data)
 
     return {
@@ -809,4 +809,4 @@ Response:
 
 ---
 
-*SAP - Simplicity Attestation Protocol - Specification v2.0*
+*SAS - Simplicity Attestation Protocol - Specification v2.0*

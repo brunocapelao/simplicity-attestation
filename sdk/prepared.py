@@ -1,5 +1,5 @@
 """
-SAP SDK - Prepared Transactions
+SAS SDK - Prepared Transactions
 
 Data structures for transactions pending external signatures.
 Enables multisig, hardware wallets, and approval workflows.
@@ -13,7 +13,7 @@ import json
 
 
 class TransactionType(Enum):
-    """Type of SAP transaction."""
+    """Type of SAS transaction."""
     ISSUE_CERTIFICATE = "issue_certificate"
     REVOKE_CERTIFICATE = "revoke_certificate"
     DRAIN_VAULT = "drain_vault"

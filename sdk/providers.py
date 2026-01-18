@@ -1,5 +1,5 @@
 """
-SAP SDK - Key Providers
+SAS SDK - Key Providers
 
 Abstract interface for key management with multiple backend implementations.
 Separates key storage/signing from SDK logic for security best practices.
@@ -71,13 +71,13 @@ class EnvKeyProvider(KeyProvider):
     where keys are injected via secrets management.
     
     Example:
-        export SAP_PRIVATE_KEY="abc123..."
+        export SAS_PRIVATE_KEY="abc123..."
         
-        provider = EnvKeyProvider("SAP_PRIVATE_KEY")
+        provider = EnvKeyProvider("SAS_PRIVATE_KEY")
         signature = provider.sign(message)
     """
     
-    def __init__(self, env_var: str = "SAP_PRIVATE_KEY"):
+    def __init__(self, env_var: str = "SAS_PRIVATE_KEY"):
         """
         Initialize from environment variable.
         

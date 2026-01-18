@@ -1,14 +1,14 @@
 """
-SAP SDK - Transaction Builder
+SAS SDK - Transaction Builder
 
-High-level transaction construction for SAP operations.
+High-level transaction construction for SAS operations.
 Encapsulates the 8-step PSET workflow into simple method calls.
 """
 
 from typing import Literal, Optional
 
 from ..models import UTXO, TransactionResult
-from ..config import SAPConfig
+from ..config import SASConfig
 from .witness import WitnessEncoder
 from .contracts import ContractRegistry
 from ..infra.hal import HalSimplicity
@@ -19,7 +19,7 @@ from ..protocols.sap import SAPProtocol
 
 class TransactionBuilder:
     """
-    Builds and executes SAP transactions.
+    Builds and executes SAS transactions.
     
     Encapsulates the complex 8-step PSET workflow:
     1. Create PSET
@@ -41,7 +41,7 @@ class TransactionBuilder:
         hal: HalSimplicity,
         api: BlockstreamAPI,
         contracts: ContractRegistry,
-        config: SAPConfig
+        config: SASConfig
     ):
         """
         Initialize transaction builder.
@@ -50,7 +50,7 @@ class TransactionBuilder:
             hal: HalSimplicity CLI wrapper.
             api: Blockstream API client.
             contracts: Contract registry.
-            config: SAP configuration.
+            config: SAS configuration.
         """
         self.hal = hal
         self.api = api
@@ -83,7 +83,7 @@ class TransactionBuilder:
         This creates a transaction with:
         - Output 0: Change back to vault
         - Output 1: Certificate UTXO
-        - Output 2: OP_RETURN with SAP payload (CID)
+        - Output 2: OP_RETURN with SAS payload (CID)
         - Output 3: Fee
         
         Args:
@@ -106,8 +106,8 @@ class TransactionBuilder:
                 error=f"Insufficient funds: {vault_utxo.value} sats"
             )
         
-        # Build SAP payload for OP_RETURN
-        sap_payload = self._build_sap_attest_payload(cid)
+        # Build SAS payload for OP_RETURN
+        sap_payload = self._build_sas_attest_payload(cid)
         
         # Create transaction outputs
         inputs = [vault_utxo.to_dict()]
@@ -169,7 +169,7 @@ class TransactionBuilder:
         outputs = []
         sap_payload = None
         if reason_code is not None or replacement_txid is not None:
-            sap_payload = self._build_sap_revoke_payload(
+            sap_payload = self._build_sas_revoke_payload(
                 cert_utxo.txid, cert_utxo.vout, reason_code, replacement_txid
             )
 
@@ -345,10 +345,10 @@ class TransactionBuilder:
                 error=str(e)
             )
     
-    def _build_sap_attest_payload(self, cid: str) -> str:
-        """Build SAP ATTEST OP_RETURN payload."""
-        # SAP protocol: "SAP" + version(0x01) + type(0x01=ATTEST) + CID
-        magic = b"SAP"
+    def _build_sas_attest_payload(self, cid: str) -> str:
+        """Build SAS ATTEST OP_RETURN payload."""
+        # SAS protocol: "SAS" + version(0x01) + type(0x01=ATTEST) + CID
+        magic = b"SAS"
         version = bytes([0x01])
         op_type = bytes([0x01])  # ATTEST
         
@@ -363,14 +363,14 @@ class TransactionBuilder:
         payload = magic + version + op_type + cid_bytes
         return payload.hex()
 
-    def _build_sap_revoke_payload(
+    def _build_sas_revoke_payload(
         self,
         txid: str,
         vout: int,
         reason_code: Optional[int],
         replacement_txid: Optional[str]
     ) -> str:
-        """Build SAP REVOKE OP_RETURN payload with optional reason code."""
+        """Build SAS REVOKE OP_RETURN payload with optional reason code."""
         return SAPProtocol.encode_revoke(
             txid, vout, reason_code=reason_code, replacement_txid=replacement_txid
         )
@@ -394,7 +394,7 @@ class TransactionBuilder:
         cert = self.contracts.certificate
         
         change_sats = vault_utxo.value - self.FEE_SATS - self.CERT_SATS
-        sap_payload = self._build_sap_attest_payload(cid)
+        sap_payload = self._build_sas_attest_payload(cid)
         
         inputs = [vault_utxo.to_dict()]
         outputs = [
@@ -436,7 +436,7 @@ class TransactionBuilder:
         outputs = []
         sap_payload = None
         if reason_code is not None or replacement_txid is not None:
-            sap_payload = self._build_sap_revoke_payload(
+            sap_payload = self._build_sas_revoke_payload(
                 cert_utxo.txid, cert_utxo.vout, reason_code, replacement_txid
             )
 

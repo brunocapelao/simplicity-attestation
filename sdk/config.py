@@ -1,5 +1,5 @@
 """
-SAP SDK - Configuration Management
+SAS SDK - Configuration Management
 
 Handles loading and managing SDK configuration.
 Separates public configuration from private keys for security.
@@ -108,9 +108,9 @@ class KeyPair:
 
 
 @dataclass
-class SAPConfig:
+class SASConfig:
     """
-    Full SAP configuration including keys.
+    Full SAS configuration including keys.
     
     DEPRECATED for new code: Use NetworkConfig + KeyProvider instead.
     
@@ -128,7 +128,7 @@ class SAPConfig:
     api_base_url: str = "https://blockstream.info/liquidtestnet/api"
     
     @classmethod
-    def from_file(cls, path: str) -> "SAPConfig":
+    def from_file(cls, path: str) -> "SASConfig":
         """Load configuration from secrets.json file (legacy format)."""
         config_path = Path(path)
         if not config_path.exists():

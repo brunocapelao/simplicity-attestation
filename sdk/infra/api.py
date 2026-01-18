@@ -1,5 +1,5 @@
 """
-SAP SDK - Blockstream API Client
+SAS SDK - Blockstream API Client
 
 Handles all blockchain interactions via the Blockstream Esplora API.
 """

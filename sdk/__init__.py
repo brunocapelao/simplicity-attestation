@@ -1,13 +1,13 @@
 """
-SAP SDK - Simplicity Attestation Protocol SDK
+SAS SDK - Simplicity Attestation Protocol SDK
 
-A Python SDK to simplify operations with the SAP system on Liquid Network.
+A Python SDK to simplify operations with the SAS system on Liquid Network.
 
 Usage (Recommended - Full Abstraction):
-    from sdk import SAP
+    from sdk import SAS
     
     # Just provide your keys - SDK handles everything
-    sap = SAP(
+    sap = SAS(
         admin_private_key="abc123...",
         delegate_private_key="def456...",
         network="testnet"
@@ -18,7 +18,7 @@ Usage (Recommended - Full Abstraction):
     sap.revoke_certificate(result.txid, 1)
 
 Usage (External Signing - multisig/hardware wallets):
-    sap = SAP(
+    sap = SAS(
         admin_pubkey="abc123...",
         delegate_pubkey="def456...",
         signer=my_hardware_wallet,
@@ -35,11 +35,11 @@ Legacy usage (with secrets.json):
 """
 
 # New unified API
-from .sap import SAP
+from .sap import SAS
 
 # Legacy client
 from .client import SAPClient
-from .config import SAPConfig, NetworkConfig, ContractInfo
+from .config import SASConfig, NetworkConfig, ContractInfo
 from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
 
 # External signature support
@@ -95,9 +95,9 @@ from .tools import ToolManager, ensure_tools, get_tool_path
 __version__ = "0.6.0"
 __all__ = [
     # Core
-    "SAP",
+    "SAS",
     "SAPClient",
-    "SAPConfig",
+    "SASConfig",
     "NetworkConfig",
     "ContractInfo",
     "Certificate",

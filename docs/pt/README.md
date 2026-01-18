@@ -1,4 +1,4 @@
-# SAP - Simplicity Attestation Protocol
+# SAS - Simplicity Attestation Protocol
 
 Sistema de certificados on-chain com delegacao hierarquica usando Simplicity na Liquid Network.
 
@@ -55,7 +55,7 @@ tests/
 docs/pt/
 ├── README.md               # Este guia (Portugues)
 ├── DOCUMENTACAO.md         # Documentacao completa (Portugues)
-├── PROTOCOL_SPEC.md        # Especificacao SAP (Portugues)
+├── PROTOCOL_SPEC.md        # Especificacao SAS (Portugues)
 └── SDK.md                  # Documentacao do SDK (Portugues)
 
 secrets.example.json        # Template (não comite chaves reais)
@@ -73,10 +73,10 @@ secrets.example.json        # Template (não comite chaves reais)
 
 ### Emitir Certificado
 ```bash
-export SAP_ADMIN_PRIVATE_KEY="<64-hex>"
-export SAP_DELEGATE_PRIVATE_KEY="<64-hex>"
-export SAP_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
-export SAP_SIMC_PATH="./simfony/target/release/simc"
+export SAS_ADMIN_PRIVATE_KEY="<64-hex>"
+export SAS_DELEGATE_PRIVATE_KEY="<64-hex>"
+export SAS_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
+export SAS_SIMC_PATH="./simfony/target/release/simc"
 
 cd tests
 python test_emit.py --admin-issue          # Admin emite certificado
@@ -93,13 +93,13 @@ python test_certificate_revoke.py --delegate
 ### SDK (E2E)
 
 ```python
-from sdk import SAP
+from sdk import SAS
 
 # 1) Criar vault (apenas chaves publicas)
 HAL_PATH = "./hal-simplicity/target/release/hal-simplicity"
 SIMC_PATH = "./simfony/target/release/simc"
 
-config = SAP.create_vault(
+config = SAS.create_vault(
     admin_pubkey="abc123...",
     delegate_pubkey="def456...",
     network="testnet",
@@ -110,12 +110,12 @@ config.save("vault_config.json")
 print(f"Financiar: {config.vault_address}")
 
 # 2) Operar como Admin
-admin = SAP.as_admin(config="vault_config.json", private_key="admin_secret...", hal_path=HAL_PATH)
+admin = SAS.as_admin(config="vault_config.json", private_key="admin_secret...", hal_path=HAL_PATH)
 result = admin.issue_certificate(cid="QmYwAPJzv5...")
 print(f"TX (emissao): {result.txid}")
 
 # 3) Operar como Delegado (entidade diferente)
-delegate = SAP.as_delegate(config="vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
+delegate = SAS.as_delegate(config="vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
 result = delegate.issue_certificate(cid="QmNewCert...")
 delegate.revoke_certificate(result.txid, 1, reason_code=6)
 
@@ -151,12 +151,12 @@ export PATH="$PWD/hal-simplicity/target/release:$PWD/simfony/target/release:$PAT
 pip install embit requests
 ```
 
-## Protocolo SAP
+## Protocolo SAS
 
 ```
 OP_RETURN:
 ┌───────┬─────────┬──────┬──────────────────────────┐
-│ "SAP" │ VERSION │ TYPE │        PAYLOAD (var)     │
+│ "SAS" │ VERSION │ TYPE │        PAYLOAD (var)     │
 │3 bytes│ 1 byte  │1 byte│        variable          │
 └───────┴─────────┴──────┴──────────────────────────┘
 ```
@@ -166,7 +166,7 @@ REVOKE payload: `TXID:VOUT` + `reason_code` opcional + `replacement_txid` opcion
 ## Exemplos no Explorer (didáticos)
 
 - Certificado válido (enquanto o UTXO do certificado, normalmente `vout=1`, estiver unspent): `https://blockstream.info/liquidtestnet/tx/2785aac5ea950c54ece28b1fbfdeb5acf29903fed89ecbb78ba997fe0b927fcb`
-  - OP_RETURN (emissão é forçada em `vout=2` pelo covenant do vault): `534150010145582d4e45572d31373637373936313938` → `SAP|01|01|EX-NEW-1767796198`
+  - OP_RETURN (emissão é forçada em `vout=2` pelo covenant do vault): `534150010145582d4e45572d31373637373936313938` → `SAS|01|01|EX-NEW-1767796198`
 - Certificado revogado com substituição (reason `REISSUE_REPLACEMENT=6`): `https://blockstream.info/liquidtestnet/tx/625dcfdac2ca7a2ddfb857254459c46e17939c7785c3e20c21f3ea33fb5be729`
   - Decodificado: `old_txid=912a79b929e331cfaf02727cd9f3282c8f87dd4a7af502c2ccf765feb5c12444`, `vout=1`, `reason_code=6`, `replacement_txid=2785aac5ea950c54ece28b1fbfdeb5acf29903fed89ecbb78ba997fe0b927fcb`
 

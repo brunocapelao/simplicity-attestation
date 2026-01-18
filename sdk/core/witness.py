@@ -1,5 +1,5 @@
 """
-SAP SDK - Witness Encoder
+SAS SDK - Witness Encoder
 
 Handles bit-level encoding of witnesses for Simplicity spending paths.
 """

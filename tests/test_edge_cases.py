@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAP - Basic Safety Checks (Local)
+SAS - Basic Safety Checks (Local)
 
 This script is a lightweight sanity check that avoids embedding any secrets
 or hardcoded deployment keys.
@@ -9,9 +9,9 @@ It verifies:
 - Delegate cannot call admin-only operations (drain_vault)
 
 Env vars:
-- SAP_ADMIN_PRIVATE_KEY / SAP_DELEGATE_PRIVATE_KEY
-- SAP_VAULT_CONFIG (default: vault_config.json)
-- SAP_HAL_PATH (default: ./hal-simplicity/target/release/hal-simplicity)
+- SAS_ADMIN_PRIVATE_KEY / SAS_DELEGATE_PRIVATE_KEY
+- SAS_VAULT_CONFIG (default: vault_config.json)
+- SAS_HAL_PATH (default: ./hal-simplicity/target/release/hal-simplicity)
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sdk import SAP
+from sdk import SAS
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -33,20 +33,20 @@ def _env(name: str, default: str | None = None) -> str | None:
 
 
 def main() -> int:
-    config_path = Path(_env("SAP_VAULT_CONFIG", "vault_config.json"))
+    config_path = Path(_env("SAS_VAULT_CONFIG", "vault_config.json"))
     if not config_path.exists():
         print(f"Missing config: {config_path} (create it via tests/test_emit.py first)", file=sys.stderr)
         return 2
 
-    hal_path = _env("SAP_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
-    admin_private_key = _env("SAP_ADMIN_PRIVATE_KEY")
-    delegate_private_key = _env("SAP_DELEGATE_PRIVATE_KEY")
+    hal_path = _env("SAS_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
+    admin_private_key = _env("SAS_ADMIN_PRIVATE_KEY")
+    delegate_private_key = _env("SAS_DELEGATE_PRIVATE_KEY")
     if not admin_private_key or not delegate_private_key:
-        print("Missing keys. Set SAP_ADMIN_PRIVATE_KEY and SAP_DELEGATE_PRIVATE_KEY.", file=sys.stderr)
+        print("Missing keys. Set SAS_ADMIN_PRIVATE_KEY and SAS_DELEGATE_PRIVATE_KEY.", file=sys.stderr)
         return 2
 
-    admin = SAP.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
-    delegate = SAP.as_delegate(str(config_path), private_key=delegate_private_key, hal_path=hal_path)
+    admin = SAS.as_admin(str(config_path), private_key=admin_private_key, hal_path=hal_path)
+    delegate = SAS.as_delegate(str(config_path), private_key=delegate_private_key, hal_path=hal_path)
 
     print("Admin info:", admin.info())
     print("Delegate info:", delegate.info())

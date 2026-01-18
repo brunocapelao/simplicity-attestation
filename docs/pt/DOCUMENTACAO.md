@@ -1,4 +1,4 @@
-# SAP - Simplicity Attestation Protocol
+# SAS - Simplicity Attestation Protocol
 
 ## Sistema de Certificados On-Chain com Delegacao via Simplicity
 
@@ -38,7 +38,7 @@ O SA e um sistema de certificados digitais on-chain que utiliza Simplicity na Li
 │              │                                                              │
 │              ├── Output 0: Troco → Vault V (ENFORCED pelo script)          │
 │              ├── Output 1: Certificate UTXO → Script C                      │
-│              ├── Output 2: OP_RETURN com payload SAP (CID/identificador)   │
+│              ├── Output 2: OP_RETURN com payload SAS (CID/identificador)   │
 │              └── Output 3: Fee                                              │
 │                       │                                                     │
 │                       ▼                                                     │
@@ -163,7 +163,7 @@ def verificar_certificado(txid: str, vout: int) -> bool:
 |------------|------|-----------|
 | **Delegation Vault (V)** | Script Simplicity | Pool de funding para emissao de certificados |
 | **Certificate (C)** | Script Simplicity | UTXO que representa um certificado valido |
-| **OP_RETURN** | Dados | Payload SAP com CID/identificador do certificado |
+| **OP_RETURN** | Dados | Payload SAS com CID/identificador do certificado |
 | **Admin Key** | Schnorr Pubkey | Autoridade raiz do sistema |
 | **Delegate Key** | Schnorr Pubkey | Autoridade delegada para emitir certificados |
 
@@ -228,7 +228,7 @@ Script simples que permite Admin OU Delegado gastar (revogar):
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  Nota: O ato de gastar este UTXO = revogar o certificado                   │
-│  Opcionalmente pode incluir OP_RETURN com SAP tipo REVOKE                  │
+│  Opcionalmente pode incluir OP_RETURN com SAS tipo REVOKE                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -345,7 +345,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Valor: 546 sats (dust)                                │    │
 │     │                                                                  │    │
 │     │ Output 2: OP_RETURN                                             │    │
-│     │           Dados: SAP 01 01 <CID_OU_IDENTIFICADOR>                │    │
+│     │           Dados: SAS 01 01 <CID_OU_IDENTIFICADOR>                │    │
 │     │                                                                  │    │
 │     │ Output 3: Fee                                                   │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -377,7 +377,7 @@ disconnect(committed_expr, disconnected_expr_cmr)
 │     │           Se omitido, valor vai para fee (queima)               │    │
 │     │                                                                  │    │
 │     │ Output 1: OP_RETURN (opcional)                                  │    │
-│     │           Dados: SAP 01 02 <TXID:VOUT>[:REASON][:REPLACEMENT]   │    │
+│     │           Dados: SAS 01 02 <TXID:VOUT>[:REASON][:REPLACEMENT]   │    │
 │     │                                                                  │    │
 │     │ Output 2: Fee (se houver destinatario)                          │    │
 │     └─────────────────────────────────────────────────────────────────┘    │
@@ -471,14 +471,14 @@ Explorer:
 
 ---
 
-## 6. Protocolo SAP (OP_RETURN)
+## 6. Protocolo SAS (OP_RETURN)
 
 ### 6.1 Formato
 
 ```
 ┌───────┬─────────┬──────────┬─────────────────────────────────────┐
 │  TAG  │ VERSION │   TYPE   │             PAYLOAD                 │
-│ "SAP" │  0x01   │  0x01    │   CID/identificador (≤75 bytes)     │
+│ "SAS" │  0x01   │  0x01    │   CID/identificador (≤75 bytes)     │
 ├───────┼─────────┼──────────┼─────────────────────────────────────┤
 │3 bytes│ 1 byte  │  1 byte  │           variavel                  │
 └───────┴─────────┴──────────┴─────────────────────────────────────┘
@@ -500,7 +500,7 @@ Explorer:
 │     │ │ └── CID: QmYwAP...
 │     │ └──── Tipo: ATTEST (0x01)
 │     └────── Versao: 1
-└──────────── Magic: "SAP"
+└──────────── Magic: "SAS"
 ```
 
 **Revogacao (minima):**
@@ -509,7 +509,7 @@ Explorer:
 │     │ │ └── TXID:VOUT referenciado
 │     │ └──── Tipo: REVOKE (0x02)
 │     └────── Versao: 1
-└──────────── Magic: "SAP"
+└──────────── Magic: "SAS"
 ```
 
 **Revogacao com motivo e substituicao:**
@@ -592,10 +592,10 @@ tests/
 
 docs/
 ├── DOCUMENTATION.md        # Esta especificacao (Ingles)
-├── PROTOCOL_SPEC.md        # Especificacao do protocolo SAP (Ingles)
+├── PROTOCOL_SPEC.md        # Especificacao do protocolo SAS (Ingles)
 └── pt/
     ├── DOCUMENTACAO.md     # Esta especificacao (Portugues)
-    ├── PROTOCOL_SPEC.md    # Especificacao do protocolo SAP (Portugues)
+    ├── PROTOCOL_SPEC.md    # Especificacao do protocolo SAS (Portugues)
     └── SDK.md              # Documentacao do SDK (Portugues)
 
 secrets.example.json        # Template (não comite chaves reais)
@@ -712,7 +712,7 @@ def verificar_certificado(cert_txid: str, cert_vout: int = 1) -> dict:
     tx = get_transaction(cert_txid)
     op_return_data = parse_op_return(tx.outputs[2])
 
-    # 3. Decodificar SAP
+    # 3. Decodificar SAS
     sap = decode_sap(op_return_data)
 
     return {
@@ -773,7 +773,7 @@ Response:
 
 ---
 
-*SAP - Simplicity Attestation Protocol - Especificacao v2.0*
+*SAS - Simplicity Attestation Protocol - Especificacao v2.0*
 
 ---
 

@@ -1,7 +1,7 @@
 """
-SAP SDK - SAP Protocol Implementation
+SAS SDK - SAS Protocol Implementation
 
-Encoder and decoder for the SAP OP_RETURN protocol.
+Encoder and decoder for the SAS OP_RETURN protocol.
 """
 
 from dataclasses import dataclass
@@ -10,14 +10,14 @@ from typing import Optional, Union
 
 @dataclass
 class SAPAttest:
-    """SAP Attestation payload."""
+    """SAS Attestation payload."""
     cid: str
     version: int = 1
 
 
 @dataclass
 class SAPRevoke:
-    """SAP Revocation payload."""
+    """SAS Revocation payload."""
     txid: str
     vout: int
     reason_code: Optional[int] = None
@@ -27,25 +27,25 @@ class SAPRevoke:
 
 @dataclass
 class SAPUpdate:
-    """SAP Update payload."""
+    """SAS Update payload."""
     cid: str
     version: int = 1
 
 
 class SAPProtocol:
     """
-    SAP OP_RETURN Protocol Implementation.
+    SAS OP_RETURN Protocol Implementation.
     
     Format:
     ┌───────┬─────────┬──────────┬─────────────────────────────────────┐
     │  TAG  │ VERSION │   TYPE   │             PAYLOAD                 │
-    │ "SAP" │  0x01   │  0x01    │   IPFS CID (variable)               │
+    │ "SAS" │  0x01   │  0x01    │   IPFS CID (variable)               │
     ├───────┼─────────┼──────────┼─────────────────────────────────────┤
     │3 bytes│ 1 byte  │  1 byte  │           variable                  │
     └───────┴─────────┴──────────┴─────────────────────────────────────┘
     """
     
-    MAGIC = b"SAP"
+    MAGIC = b"SAS"
     VERSION = 0x01
     
     # Operation types
@@ -111,7 +111,7 @@ class SAPProtocol:
             validate: If True, validates payload size (default: True).
         
         Returns:
-            Hex-encoded SAP payload.
+            Hex-encoded SAS payload.
         
         Raises:
             PayloadTooLargeError: If CID exceeds 75 bytes.
@@ -148,7 +148,7 @@ class SAPProtocol:
             replacement_txid: Optional txid for replacement certificate.
         
         Returns:
-            Hex-encoded SAP payload.
+            Hex-encoded SAS payload.
         """
         header = cls.MAGIC + bytes([cls.VERSION, cls.TYPE_REVOKE])
         txid_bytes = bytes.fromhex(txid)
@@ -180,7 +180,7 @@ class SAPProtocol:
             validate: If True, validates payload size (default: True).
         
         Returns:
-            Hex-encoded SAP payload.
+            Hex-encoded SAS payload.
         
         Raises:
             PayloadTooLargeError: If CID exceeds 75 bytes.
@@ -201,13 +201,13 @@ class SAPProtocol:
     @classmethod
     def decode(cls, data: bytes) -> Optional[Union[SAPAttest, SAPRevoke, SAPUpdate]]:
         """
-        Decode a SAP OP_RETURN payload.
+        Decode a SAS OP_RETURN payload.
         
         Args:
             data: Raw OP_RETURN data bytes.
         
         Returns:
-            Decoded SAP object or None if invalid.
+            Decoded SAS object or None if invalid.
         """
         if len(data) < 5:
             return None
@@ -260,13 +260,13 @@ class SAPProtocol:
     @classmethod
     def decode_hex(cls, hex_data: str) -> Optional[Union[SAPAttest, SAPRevoke, SAPUpdate]]:
         """
-        Decode a hex-encoded SAP OP_RETURN payload.
+        Decode a hex-encoded SAS OP_RETURN payload.
         
         Args:
             hex_data: Hex-encoded OP_RETURN data.
         
         Returns:
-            Decoded SAP object or None if invalid.
+            Decoded SAS object or None if invalid.
         """
         try:
             data = bytes.fromhex(hex_data)
@@ -275,6 +275,6 @@ class SAPProtocol:
             return None
     
     @classmethod
-    def is_sap_payload(cls, data: bytes) -> bool:
-        """Check if data is a valid SAP payload."""
+    def is_sas_payload(cls, data: bytes) -> bool:
+        """Check if data is a valid SAS payload."""
         return len(data) >= 5 and data[:3] == cls.MAGIC

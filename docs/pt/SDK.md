@@ -1,4 +1,4 @@
-# SAP SDK v0.6.0 - Documentação Completa
+# SAS SDK v0.6.0 - Documentação Completa
 
 SDK Python para o Simplicity Attestation Protocol na rede Liquid.
 
@@ -15,7 +15,7 @@ SDK Python para o Simplicity Attestation Protocol na rede Liquid.
 7. [Controle de Acesso](#controle-de-acesso)
 8. [Modelos de Dados](#modelos-de-dados)
 9. [Features de Produção](#features-de-produção)
-10. [Protocolo SAP](#protocolo-sap)
+10. [Protocolo SAS](#protocolo-sap)
 
 ---
 
@@ -104,13 +104,13 @@ client.revoke_certificate(result.txid, 1)
 
 ```python
 import os
-from sdk import SAP
+from sdk import SAS
 
 HAL_PATH = "./hal-simplicity/target/release/hal-simplicity"
 SIMC_PATH = "./simfony/target/release/simc"
 
 # Config pública (pode estar no git)
-config = SAP.create_vault(
+config = SAS.create_vault(
     admin_pubkey="abc123...",
     delegate_pubkey="def456...",
     network="testnet",
@@ -120,8 +120,8 @@ config = SAP.create_vault(
 config.save("vault_config.json")
 
 # Chaves privadas fora do git (ex.: env vars)
-admin = SAP.as_admin("vault_config.json", private_key=os.environ["SAP_ADMIN_PRIVATE_KEY"], hal_path=HAL_PATH)
-delegate = SAP.as_delegate("vault_config.json", private_key=os.environ["SAP_DELEGATE_PRIVATE_KEY"], hal_path=HAL_PATH)
+admin = SAS.as_admin("vault_config.json", private_key=os.environ["SAS_ADMIN_PRIVATE_KEY"], hal_path=HAL_PATH)
+delegate = SAS.as_delegate("vault_config.json", private_key=os.environ["SAS_DELEGATE_PRIVATE_KEY"], hal_path=HAL_PATH)
 
 result = delegate.issue_certificate(cid="Qm...")
 ```
@@ -129,13 +129,13 @@ result = delegate.issue_certificate(cid="Qm...")
 ### Ciclo Completo (E2E)
 
 ```python
-from sdk import SAP
+from sdk import SAS
 
 # 1) Criar vault (publico)
 HAL_PATH = "./hal-simplicity/target/release/hal-simplicity"
 SIMC_PATH = "./simfony/target/release/simc"
 
-config = SAP.create_vault(
+config = SAS.create_vault(
     admin_pubkey="abc123...",
     delegate_pubkey="def456...",
     network="testnet",
@@ -146,7 +146,7 @@ config.save("vault_config.json")
 
 # 2) Financiar vault externamente (L-BTC)
 # 3) Emitir certificado
-delegate = SAP.as_delegate("vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
+delegate = SAS.as_delegate("vault_config.json", private_key="delegate_secret...", hal_path=HAL_PATH)
 issue = delegate.issue_certificate(cid="Qm...")
 
 # 4) Revogar (com motivo + substituicao)
@@ -170,7 +170,7 @@ revoke = delegate.revoke_certificate(issue.txid, vout=1, reason_code=6, replacem
 from sdk import EnvKeyProvider, MemoryKeyProvider, FileKeyProvider
 
 # Produção: variável de ambiente
-provider = EnvKeyProvider("SAP_PRIVATE_KEY")
+provider = EnvKeyProvider("SAS_PRIVATE_KEY")
 
 # Desenvolvimento: em memória
 provider = MemoryKeyProvider("abc123...64 hex chars...")
@@ -180,7 +180,7 @@ signature = provider.sign(message_bytes)  # 64-byte Schnorr
 pubkey = provider.public_key  # x-only pubkey
 ```
 
-### NetworkConfig vs SAPConfig
+### NetworkConfig vs SASConfig
 
 ```python
 # NOVO: Config pública (segura para git)
@@ -188,14 +188,14 @@ from sdk import NetworkConfig
 config = NetworkConfig.from_file("network_config.json")
 
 # LEGADO: Config com chaves (NÃO comitar)
-from sdk import SAPConfig
+from sdk import SASConfig
 # copie `secrets.example.json` → `secrets.json` e preencha chaves/contratos.
-config = SAPConfig.from_file("secrets.json")
+config = SASConfig.from_file("secrets.json")
 ```
 
 ---
 
-## SAPClient
+## SASClient
 
 ### Construtores
 
@@ -205,8 +205,8 @@ client = SAPClient.from_config("secrets.json")
 
 # Com logging
 import logging
-from sdk import SAPConfig
-client = SAPClient(config=SAPConfig.from_file("secrets.json"), logger=logging.getLogger("sap"))
+from sdk import SASConfig
+client = SAPClient(config=SASConfig.from_file("secrets.json"), logger=logging.getLogger("sap"))
 ```
 
 ### Operações do Vault
@@ -482,12 +482,12 @@ logger = create_file_logger("/var/log/sap.log")
 
 ---
 
-## Protocolo SAP
+## Protocolo SAS
 
 ### Formato OP_RETURN
 
 ```
-[SAP] [VERSION] [TYPE] [PAYLOAD]
+[SAS] [VERSION] [TYPE] [PAYLOAD]
  3B      1B       1B    Variable
 ```
 
@@ -511,7 +511,7 @@ payload_hex = SAPProtocol.encode_attest("QmYwAPJzv5...")
 
 # Decode
 sap = SAPProtocol.decode_hex(payload_hex)
-print(type(sap).__name__)  # SAPAttest / SAPRevoke / SAPUpdate
+print(type(sap).__name__)  # SASAttest / SAPRevoke / SAPUpdate
 if hasattr(sap, "cid"):
     print(sap.cid)
 ```
@@ -578,7 +578,7 @@ except InsufficientFundsError as e:
 ## Changelog
 
 ### v0.6.0 (Current)
-- **Unified SAP API** with `SAP.create_vault()`, `SAP.as_admin()`, `SAP.as_delegate()`
+- **Unified SAS API** with `SAS.create_vault()`, `SAS.as_admin()`, `SAS.as_delegate()`
 - Vault creation requires only PUBLIC keys
 - Role-based operation (Admin vs Delegate)
 - Automatic contract compilation with key injection

@@ -1,7 +1,7 @@
 """
-SAP SDK - Main Client
+SAS SDK - Main Client
 
-High-level interface for SAP operations.
+High-level interface for SAS operations.
 This is the primary entry point for SDK users.
 """
 
@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, List, Literal, Callable
 import logging
 
-from .config import SAPConfig
+from .config import SASConfig
 from .models import Certificate, Vault, TransactionResult, CertificateStatus
 from .core.transaction import TransactionBuilder
 from .core.contracts import ContractRegistry
@@ -34,7 +34,7 @@ from .prepared import PreparedTransaction, TransactionType
 
 class SAPClient:
     """
-    High-level client for SAP operations.
+    High-level client for SAS operations.
     
     Provides simple one-line methods for:
     - Issuing certificates
@@ -66,17 +66,17 @@ class SAPClient:
     
     def __init__(
         self,
-        config: SAPConfig,
+        config: SASConfig,
         hal: Optional[HalSimplicity] = None,
         api: Optional[BlockstreamAPI] = None,
         logger: Optional[logging.Logger] = None,
         enable_events: bool = True
     ):
         """
-        Initialize SAP client.
+        Initialize SAS client.
         
         Args:
-            config: SAP configuration.
+            config: SAS configuration.
             hal: Optional HalSimplicity instance.
             api: Optional BlockstreamAPI instance.
             logger: Optional Python logger for structured logging.
@@ -133,7 +133,7 @@ class SAPClient:
                     path = candidate
                     break
         
-        config = SAPConfig.from_file(str(path))
+        config = SASConfig.from_file(str(path))
         return cls(config)
     
     # =========================================================================
@@ -325,7 +325,7 @@ class SAPClient:
         if len(tx.get("vout", [])) > 2:
             op_return = tx["vout"][2]
             if op_return.get("scriptpubkey_type") == "op_return":
-                # Try to decode SAP payload
+                # Try to decode SAS payload
                 hex_data = op_return.get("scriptpubkey", "")[4:]  # Skip OP_RETURN opcode
                 sap = self.sap_protocol.decode_hex(hex_data)
                 if hasattr(sap, 'cid'):

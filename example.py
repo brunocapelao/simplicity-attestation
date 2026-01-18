@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAP SDK - Usage Example
+SAS SDK - Usage Example
 
 Demonstrates how to use the SDK for common operations.
 """
@@ -10,7 +10,7 @@ from sdk import SAPClient
 def main():
     # Initialize client from config
     print("=" * 60)
-    print("SAP SDK Example")
+    print("SAS SDK Example")
     print("=" * 60)
     
     try:

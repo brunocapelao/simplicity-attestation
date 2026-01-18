@@ -1,5 +1,5 @@
 """
-SAP SDK - Fee Estimation
+SAS SDK - Fee Estimation
 
 Dynamic fee estimation for Liquid Network transactions.
 """

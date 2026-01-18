@@ -1,5 +1,5 @@
 """
-SAP SDK - Key Management
+SAS SDK - Key Management
 
 Handles cryptographic key operations including Schnorr signatures.
 """
@@ -10,7 +10,7 @@ from embit import ec
 
 class KeyManager:
     """
-    Manages cryptographic keys for SAP operations.
+    Manages cryptographic keys for SAS operations.
     
     Provides Schnorr signature generation using embit library.
     """

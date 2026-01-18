@@ -1,6 +1,6 @@
-# 📋 SAP - Simplicity Attestation Protocol
+# 📋 SAS - Simplicity Attestation Protocol
 
-## Simplicity Attestation Protocol (SAP)
+## Simplicity Attestation System (SAS)
 
 **Versão:** 1.0  
 **Data:** 2026-01-05  
@@ -10,7 +10,7 @@
 
 ## 1. Visão Geral
 
-O protocolo SAP define um formato padronizado para armazenar referências a atestações (certificados) em outputs OP_RETURN de transações Liquid/Bitcoin. O formato permite que indexadores identifiquem rapidamente transações relacionadas ao sistema Simplicity Attestation.
+O protocolo SAS define um formato padronizado para armazenar referências a atestações (certificados) em outputs OP_RETURN de transações Liquid/Bitcoin. O formato permite que indexadores identifiquem rapidamente transações relacionadas ao sistema Simplicity Attestation.
 
 ---
 
@@ -37,7 +37,7 @@ O protocolo SAP define um formato padronizado para armazenar referências a ates
 **Magic bytes** para identificar o protocolo Simplicity Attestation:
 
 ```
-ASCII:  "SAP"
+ASCII:  "SAS"
 HEX:    0x534150
 ```
 
@@ -84,7 +84,7 @@ Depende do TYPE:
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAP     │ 01  │  01  │ QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG │
+│    SAS     │ 01  │  01  │ QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
 │ 534150     │ 01  │  01  │ (46 bytes - CIDv0 base58)                       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
@@ -96,14 +96,14 @@ HEX completo:
 Exemplo real (Liquid testnet) com payload UTF-8:
 
 - TX de emissão: `https://blockstream.info/liquidtestnet/tx/2785aac5ea950c54ece28b1fbfdeb5acf29903fed89ecbb78ba997fe0b927fcb`
-- OP_RETURN (output `vout=2`): `534150010145582d4e45572d31373637373936313938` → `SAP|01|01|EX-NEW-1767796198`
+- OP_RETURN (output `vout=2`): `534150010145582d4e45572d31373637373936313938` → `SAS|01|01|EX-NEW-1767796198`
 
 ### 3.2 Revogação de Atestação
 
 ```
 OP_RETURN:
 ┌────────────┬─────┬──────┬─────────────────────────────────────────────────┐
-│    SAP     │ 01  │  02  │ <TXID>:<vout>[:reason_code][:replacement_txid]  │
+│    SAS     │ 01  │  02  │ <TXID>:<vout>[:reason_code][:replacement_txid]  │
 ├────────────┼─────┼──────┼─────────────────────────────────────────────────┤
 │ 534150     │ 01  │  02  │ (34 bytes - 32 bytes TXID + 2 bytes vout)       │
 └────────────┴─────┴──────┴─────────────────────────────────────────────────┘
@@ -151,7 +151,7 @@ def index_transaction(tx):
         # Verificar magic bytes
         if len(data) < 5:
             continue
-        if data[0:3] != b'SAP':
+        if data[0:3] != b'SAS':
             continue
             
         # Parse header
@@ -194,7 +194,7 @@ O campo VERSION permite evolução do protocolo mantendo compatibilidade:
 O contrato Simplicity pode opcionalmente validar o prefixo:
 
 ```rust
-// Verificar que o OP_RETURN começa com "SAP"
+// Verificar que o OP_RETURN começa com "SAS"
 let maybe_datum = jet::output_null_datum(2, 0);
 // Extrair primeiros 4 bytes e comparar com 0x53414944
 ```
@@ -204,7 +204,7 @@ let maybe_datum = jet::output_null_datum(2, 0);
 | Componente | Tamanho | Acumulado |
 |------------|---------|-----------|
 | OP_RETURN max | 80 bytes | - |
-| TAG (SAP) | 3 bytes | 3 |
+| TAG (SAS) | 3 bytes | 3 |
 | VERSION | 1 byte | 4 |
 | TYPE | 1 byte | 5 |
 | CIDv0 | 46 bytes | 51 |
@@ -234,9 +234,9 @@ Para CIDv1 (mais longo), ainda cabe confortavelmente.
 ### Encoder (Python)
 
 ```python
-def encode_sap_attest(cid: str) -> bytes:
+def encode_sas_attest(cid: str) -> bytes:
     """Codifica um OP_RETURN de emissão de atestação."""
-    tag = b'SAP'
+    tag = b'SAS'
     version = bytes([0x01])
     op_type = bytes([0x01])  # ATTEST
     payload = cid.encode('utf-8')
@@ -244,9 +244,9 @@ def encode_sap_attest(cid: str) -> bytes:
     return tag + version + op_type + payload
 
 
-def encode_sap_revoke(txid: bytes, vout: int) -> bytes:
+def encode_sas_revoke(txid: bytes, vout: int) -> bytes:
     """Codifica um OP_RETURN de revogação."""
-    tag = b'SAP'
+    tag = b'SAS'
     version = bytes([0x01])
     op_type = bytes([0x02])  # REVOKE
     payload = txid + vout.to_bytes(2, 'big')
@@ -270,10 +270,10 @@ class SAPRevoke:
     vout: int
 
 def decode_sap(data: bytes) -> Optional[Union[SAPAttest, SAPRevoke]]:
-    """Decodifica um OP_RETURN SAP."""
+    """Decodifica um OP_RETURN SAS."""
     if len(data) < 5:
         return None
-    if data[0:3] != b'SAP':
+    if data[0:3] != b'SAS':
         return None
 
     version = data[3]
@@ -293,7 +293,7 @@ def decode_sap(data: bytes) -> Optional[Union[SAPAttest, SAPRevoke]]:
 
 ---
 
-*Simplicity Attestation Protocol (SAP) - Specification v1.0*
+*Simplicity Attestation System (SAS) - Specification v1.0*
 
 ---
 

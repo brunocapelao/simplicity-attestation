@@ -1,5 +1,5 @@
 """
-SAP SDK - Hal-Simplicity CLI Wrapper
+SAS SDK - Hal-Simplicity CLI Wrapper
 
 Provides a clean Python interface to the hal-simplicity command-line tool.
 """

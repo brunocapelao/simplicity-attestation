@@ -1,5 +1,5 @@
 """
-SAP SDK - Roles and Permissions
+SAS SDK - Roles and Permissions
 
 Role-based access control for Admin and Delegate operations.
 Enforces least-privilege principle at the SDK level.
@@ -26,7 +26,7 @@ class PermissionError(SAPError):
 
 class Role(Enum):
     """
-    User roles in the SAP system.
+    User roles in the SAS system.
     
     ADMIN: Root authority with full control
     - Can drain vault (deactivate delegate)
@@ -50,7 +50,7 @@ class Permission:
 
 
 class Permissions:
-    """Available permissions in the SAP system."""
+    """Available permissions in the SAS system."""
     
     # Vault operations
     VAULT_READ = Permission("vault:read", "Read vault balance and UTXOs")

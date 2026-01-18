@@ -1,4 +1,4 @@
-# Contributing to SAP
+# Contributing to SAS
 
 Thank you for your interest in contributing to the Simplicity Attestation Protocol!
 
@@ -33,10 +33,10 @@ Thank you for your interest in contributing to the Simplicity Attestation Protoc
 ### Running Tests
 
 ```bash
-export SAP_ADMIN_PRIVATE_KEY="<64-hex>"
-export SAP_DELEGATE_PRIVATE_KEY="<64-hex>"
-export SAP_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
-export SAP_SIMC_PATH="./simfony/target/release/simc"
+export SAS_ADMIN_PRIVATE_KEY="<64-hex>"
+export SAS_DELEGATE_PRIVATE_KEY="<64-hex>"
+export SAS_HAL_PATH="./hal-simplicity/target/release/hal-simplicity"
+export SAS_SIMC_PATH="./simfony/target/release/simc"
 
 cd tests
 python test_emit.py --delegate-issue
@@ -59,7 +59,7 @@ python test_edge_cases.py
 
 1. Open an issue with `[Feature]` prefix
 2. Describe the use case and expected behavior
-3. Explain how it aligns with SAP's goals
+3. Explain how it aligns with SAS's goals
 
 ### Submitting Pull Requests
 
@@ -103,7 +103,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 │   ├── vault.simf      # Delegation vault (3 spending paths)
 │   └── certificate.simf # Certificate UTXO
 ├── sdk/                # Python SDK
-│   ├── sap.py          # Main SAP class
+│   ├── sas.py          # Main SAS class
 │   ├── client.py       # Legacy SAPClient
 │   └── ...
 ├── tests/              # Test scripts

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAP - Attack Vectors (Local / Offline)
+SAS - Attack Vectors (Local / Offline)
 
 This script intentionally does NOT broadcast transactions.
 It builds PSETs and uses `hal-simplicity simplicity pset run` to prove that
@@ -11,10 +11,10 @@ Prerequisites:
 - A `vault_config.json` already created (e.g. via tests/test_emit.py)
 
 Env vars:
-- SAP_NETWORK: testnet|mainnet (default: testnet)
-- SAP_VAULT_CONFIG: path to vault config json (default: vault_config.json)
-- SAP_HAL_PATH: path to hal-simplicity binary (default: hal-simplicity)
-- SAP_ADMIN_PRIVATE_KEY / SAP_DELEGATE_PRIVATE_KEY: 64-hex (only used for role checks)
+- SAS_NETWORK: testnet|mainnet (default: testnet)
+- SAS_VAULT_CONFIG: path to vault config json (default: vault_config.json)
+- SAS_HAL_PATH: path to hal-simplicity binary (default: hal-simplicity)
+- SAS_ADMIN_PRIVATE_KEY / SAS_DELEGATE_PRIVATE_KEY: 64-hex (only used for role checks)
 """
 
 from __future__ import annotations
@@ -29,10 +29,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from embit import ec
 
-from sdk import SAP
-from sdk.protocols.sap import SAPProtocol
+from sdk import SAS
+from sdk.protocols.sas import SAPProtocol
 from sdk.infra.hal import HalSimplicity
-from sdk.sap import VaultConfig
+from sdk.sas import VaultConfig
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -117,13 +117,13 @@ def _assert(condition: bool, msg: str) -> None:
 
 
 def main() -> int:
-    config_path = Path(_env("SAP_VAULT_CONFIG", "vault_config.json"))
+    config_path = Path(_env("SAS_VAULT_CONFIG", "vault_config.json"))
     if not config_path.exists():
         print(f"Missing config: {config_path} (create it via tests/test_emit.py first)", file=sys.stderr)
         return 2
 
     config = VaultConfig.load(str(config_path))
-    hal_path = _env("SAP_HAL_PATH", "hal-simplicity") or "hal-simplicity"
+    hal_path = _env("SAS_HAL_PATH", "hal-simplicity") or "hal-simplicity"
     hal = HalSimplicity(hal_path, network="liquid")
 
     base = _base_issuance_outputs(config)
@@ -192,10 +192,10 @@ def main() -> int:
         print(f"OK: {case.name}")
 
     # Role/permission checks (SDK-level)
-    admin_priv = _env("SAP_ADMIN_PRIVATE_KEY")
-    delegate_priv = _env("SAP_DELEGATE_PRIVATE_KEY")
+    admin_priv = _env("SAS_ADMIN_PRIVATE_KEY")
+    delegate_priv = _env("SAS_DELEGATE_PRIVATE_KEY")
     if admin_priv and delegate_priv:
-        delegate = SAP.as_delegate(str(config_path), private_key=delegate_priv, hal_path=hal_path)
+        delegate = SAS.as_delegate(str(config_path), private_key=delegate_priv, hal_path=hal_path)
         try:
             delegate.drain_vault(recipient=config.vault_address)
             raise AssertionError("delegate.drain_vault unexpectedly succeeded")
@@ -206,7 +206,7 @@ def main() -> int:
 
     # Forgery prevention (mismatched private key rejected)
     try:
-        SAP.as_delegate(str(config_path), private_key=_gen_priv_hex(), hal_path=hal_path)
+        SAS.as_delegate(str(config_path), private_key=_gen_priv_hex(), hal_path=hal_path)
         raise AssertionError("Mismatched delegate private key unexpectedly accepted")
     except Exception:
         print("OK: mismatched private key rejected (prevents third-party forging via SDK)")

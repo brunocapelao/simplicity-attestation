@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-SAP - Certificate Revocation (E2E)
+SAS - Certificate Revocation (E2E)
 
 No keys are committed. Provide keys via env vars.
 
 Env vars:
-- SAP_ADMIN_PRIVATE_KEY / SAP_DELEGATE_PRIVATE_KEY
-- SAP_NETWORK (default: testnet)
-- SAP_VAULT_CONFIG (default: vault_config.json)
-- SAP_HAL_PATH (default: ./hal-simplicity/target/release/hal-simplicity)
+- SAS_ADMIN_PRIVATE_KEY / SAS_DELEGATE_PRIVATE_KEY
+- SAS_NETWORK (default: testnet)
+- SAS_VAULT_CONFIG (default: vault_config.json)
+- SAS_HAL_PATH (default: ./hal-simplicity/target/release/hal-simplicity)
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sdk import SAP
+from sdk import SAS
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -42,23 +42,23 @@ def main() -> int:
     parser.add_argument("--recipient", default=None)
     args = parser.parse_args()
 
-    config_path = Path(_env("SAP_VAULT_CONFIG", "vault_config.json"))
+    config_path = Path(_env("SAS_VAULT_CONFIG", "vault_config.json"))
     if not config_path.exists():
         print(f"Missing config: {config_path} (create it via tests/test_emit.py first)", file=sys.stderr)
         return 2
 
-    hal_path = _env("SAP_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
+    hal_path = _env("SAS_HAL_PATH", "./hal-simplicity/target/release/hal-simplicity")
     if args.admin:
-        private_key = _env("SAP_ADMIN_PRIVATE_KEY")
+        private_key = _env("SAS_ADMIN_PRIVATE_KEY")
         role_label = "admin"
-        sap = SAP.as_admin(str(config_path), private_key=private_key or "", hal_path=hal_path)
+        sap = SAS.as_admin(str(config_path), private_key=private_key or "", hal_path=hal_path)
     else:
-        private_key = _env("SAP_DELEGATE_PRIVATE_KEY")
+        private_key = _env("SAS_DELEGATE_PRIVATE_KEY")
         role_label = "delegate"
-        sap = SAP.as_delegate(str(config_path), private_key=private_key or "", hal_path=hal_path)
+        sap = SAS.as_delegate(str(config_path), private_key=private_key or "", hal_path=hal_path)
 
     if not private_key:
-        print(f"Missing key: set SAP_{role_label.upper()}_PRIVATE_KEY", file=sys.stderr)
+        print(f"Missing key: set SAS_{role_label.upper()}_PRIVATE_KEY", file=sys.stderr)
         return 2
 
     txid = args.txid

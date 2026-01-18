@@ -1,5 +1,5 @@
 """
-SAP SDK - Structured Logging
+SAS SDK - Structured Logging
 
 Provides structured logging for audit and debugging.
 """
@@ -45,7 +45,7 @@ class LogEntry:
 
 class StructuredLogger:
     """
-    Structured logger for SAP SDK operations.
+    Structured logger for SAS SDK operations.
     
     Provides JSON-formatted logs suitable for log aggregation
     systems like ELK, Datadog, or CloudWatch.

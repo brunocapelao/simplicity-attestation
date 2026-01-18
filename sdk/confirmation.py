@@ -1,5 +1,5 @@
 """
-SAP SDK - Transaction Confirmation Tracking
+SAS SDK - Transaction Confirmation Tracking
 
 Provides async transaction confirmation waiting and status tracking.
 """

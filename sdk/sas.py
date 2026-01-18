@@ -1,5 +1,5 @@
 """
-SAP SDK - Simplicity Attestation Protocol
+SAS SDK - Simplicity Attestation Protocol
 
 A fully abstracted SDK that handles all complexity internally.
 
@@ -8,10 +8,10 @@ ARCHITECTURE:
     - Operation: Each party uses their OWN private key
 
 Example (Create Vault - Admin setup):
-    from sdk import SAP
+    from sdk import SAS
     
     # Admin creates vault with both pubkeys
-    vault_config = SAP.create_vault(
+    vault_config = SAS.create_vault(
         admin_pubkey="abc123...",
         delegate_pubkey="def456...",
         network="testnet"
@@ -22,7 +22,7 @@ Example (Create Vault - Admin setup):
     print(f"Fund: {vault_config.vault_address}")
 
 Example (Admin Operations):
-    sap = SAP.as_admin(
+    sap = SAS.as_admin(
         config="vault_config.json",
         private_key="admin_secret..."
     )
@@ -30,7 +30,7 @@ Example (Admin Operations):
     sap.drain_vault(recipient)
 
 Example (Delegate Operations - Different Company):
-    sap = SAP.as_delegate(
+    sap = SAS.as_delegate(
         config="vault_config.json",
         private_key="delegate_secret..."
     )
@@ -162,7 +162,7 @@ class VaultConfig:
         return cls(**data)
 
 
-class SAP:
+class SAS:
     """
     Simplicity Attestation Protocol SDK.
     
@@ -278,7 +278,7 @@ class SAP:
         config: Union[str, VaultConfig],
         private_key: str,
         hal_path: Optional[str] = None,
-    ) -> "SAP":
+    ) -> "SAS":
         """
         Create SDK instance as ADMIN.
         
@@ -292,7 +292,7 @@ class SAP:
             private_key: Admin private key (64 hex chars).
         
         Returns:
-            SAP instance configured as admin.
+            SAS instance configured as admin.
         """
         if isinstance(config, str):
             config = VaultConfig.load(config)
@@ -310,7 +310,7 @@ class SAP:
         config: Union[str, VaultConfig],
         private_key: str,
         hal_path: Optional[str] = None,
-    ) -> "SAP":
+    ) -> "SAS":
         """
         Create SDK instance as DELEGATE.
         
@@ -327,7 +327,7 @@ class SAP:
             private_key: Delegate private key (64 hex chars).
         
         Returns:
-            SAP instance configured as delegate.
+            SAS instance configured as delegate.
         """
         if isinstance(config, str):
             config = VaultConfig.load(config)
@@ -350,7 +350,7 @@ class SAP:
         private_key: str,
         hal_path: Optional[str] = None,
     ):
-        """Initialize SAP instance. Use as_admin() or as_delegate() instead."""
+        """Initialize SAS instance. Use as_admin() or as_delegate() instead."""
         self.config = config
         self.role = role
         self._key = KeyManager(private_key)
@@ -525,7 +525,7 @@ class SAP:
         CERT_SATS = 546
         
         change_sats = vault_utxo.value - FEE_SATS - CERT_SATS
-        sap_payload = self._build_sap_payload(cid)
+        sap_payload = self._build_sas_payload(cid)
         
         inputs = [{"txid": vault_utxo.txid, "vout": vault_utxo.vout}]
         outputs = [
@@ -678,9 +678,9 @@ class SAP:
         except Exception as e:
             return TransactionResult(success=False, error=str(e))
     
-    def _build_sap_payload(self, cid: str) -> str:
-        """Build SAP OP_RETURN payload."""
-        magic = b"SAP"
+    def _build_sas_payload(self, cid: str) -> str:
+        """Build SAS OP_RETURN payload."""
+        magic = b"SAS"
         version = bytes([0x01])
         op_type = bytes([0x01])
         

@@ -1,4 +1,4 @@
-# SAP SDK (Python)
+# SAS SDK (Python)
 
 Python SDK for the Simplicity Attestation Protocol on Liquid Network.
 
@@ -22,14 +22,14 @@ Requires `simc` and `hal-simplicity`. You can pass paths explicitly (recommended
 ### 1. Create a Vault (Public Keys Only)
 
 ```python
-from sdk import SAP
+from sdk import SAS
 
 # Paths to required tools
 HAL_PATH = "/path/to/hal-simplicity"
 SIMC_PATH = "/path/to/simc"
 
 # Admin creates vault with both public keys
-config = SAP.create_vault(
+config = SAS.create_vault(
     admin_pubkey="abc123...64hex...",
     delegate_pubkey="def456...64hex...",
     network="testnet",
@@ -45,9 +45,9 @@ print(f"Fund this address: {config.vault_address}")
 ### 2. Operate as Admin
 
 ```python
-from sdk import SAP
+from sdk import SAS
 
-sap = SAP.as_admin(
+sap = SAS.as_admin(
     config="vault_config.json",
     private_key="admin_private_key...",
     hal_path=HAL_PATH,
@@ -67,9 +67,9 @@ sap.drain_vault(recipient="tex1...")
 ### 3. Operate as Delegate
 
 ```python
-from sdk import SAP
+from sdk import SAS
 
-sap = SAP.as_delegate(
+sap = SAS.as_delegate(
     config="vault_config.json",
     private_key="delegate_private_key...",
     hal_path=HAL_PATH,
@@ -99,11 +99,11 @@ else:
 For scenarios where private keys are managed externally (hardware wallets, multisig, custody):
 
 ```python
-from sdk import SAPClient, SAPConfig
+from sdk import SAPClient, SASConfig
 from sdk.infra.hal import HalSimplicity
 
 client = SAPClient(
-    config=SAPConfig.from_file("config.json"),
+    config=SASConfig.from_file("config.json"),
     hal=HalSimplicity("/path/to/hal-simplicity", network="liquid"),
 )
 

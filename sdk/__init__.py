@@ -35,7 +35,7 @@ Legacy usage (with secrets.json):
 """
 
 # New unified API
-from .sap import SAS
+from .sas import SAS
 
 # Legacy client
 from .client import SAPClient

@@ -1,5 +1,5 @@
 """Protocols package."""
 
-from .sap import SAPProtocol
+from .sas import SAPProtocol
 
 __all__ = ["SAPProtocol"]

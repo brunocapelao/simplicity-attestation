@@ -48,7 +48,7 @@ from .infra.hal import HalSimplicity
 from .infra.api import BlockstreamAPI
 from .infra.keys import KeyManager
 from .core.witness import WitnessEncoder
-from .protocols.sap import SAPProtocol
+from .protocols.sas import SAPProtocol
 from .errors import SAPError, VaultEmptyError, InsufficientFundsError
 
 

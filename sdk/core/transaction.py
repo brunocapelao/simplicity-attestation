@@ -14,7 +14,7 @@ from .contracts import ContractRegistry
 from ..infra.hal import HalSimplicity
 from ..infra.api import BlockstreamAPI
 from ..infra.keys import KeyManager
-from ..protocols.sap import SAPProtocol
+from ..protocols.sas import SAPProtocol
 
 
 class TransactionBuilder:

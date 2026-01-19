@@ -65,16 +65,16 @@ class HalSimplicity:
     def _run(self, args: List[str]) -> Tuple[str, Optional[str]]:
         """
         Run hal-simplicity command.
-        
+
         Returns:
             Tuple of (stdout, stderr). stderr is None on success.
         """
         cmd = [self.binary] + args
         result = subprocess.run(cmd, capture_output=True, text=True)
-        
+
         if result.returncode != 0:
             return "", result.stderr
-        
+
         return result.stdout.strip(), None
     
     def _run_json(self, args: List[str]) -> dict:
@@ -82,7 +82,7 @@ class HalSimplicity:
         output, err = self._run(args)
         if err:
             raise HalSimplicityError(f"Command failed: {err}")
-        
+
         try:
             data = json.loads(output)
             if isinstance(data, dict) and data.get("error"):

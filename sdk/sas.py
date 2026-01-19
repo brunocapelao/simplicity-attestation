@@ -74,7 +74,8 @@ def _script_pubkey_to_address(script_pubkey: str, network: str) -> str:
     if not script_pubkey.startswith("5120") or len(script_pubkey) != 68:
         raise ValueError("Invalid taproot scriptPubKey")
 
-    hrp = "tex" if network == "testnet" else "ex"
+    # Accept both "testnet" and "liquidtestnet" for testnet addresses
+    hrp = "tex" if network in ("testnet", "liquidtestnet") else "ex"
     output_key = bytes.fromhex(script_pubkey[4:])
     return bech32.encode(hrp, 1, output_key)
 
@@ -354,7 +355,7 @@ class SAS:
         self.config = config
         self.role = role
         self._key = KeyManager(private_key)
-        
+
         # Verify key matches expected pubkey
         expected_pub = config.admin_pubkey if role == "admin" else config.delegate_pubkey
         if self._key.public_key != expected_pub:
@@ -362,16 +363,19 @@ class SAS:
                 f"Private key doesn't match {role} pubkey. "
                 f"Expected: {expected_pub[:16]}..., Got: {self._key.public_key[:16]}..."
             )
-        
+
+        # Normalize network name: "liquidtestnet" -> "testnet"
+        network = "testnet" if config.network in ("testnet", "liquidtestnet") else "mainnet"
+
         # Initialize infrastructure
-        network_config = self.NETWORKS[config.network]
+        network_config = self.NETWORKS[network]
         self.hal = HalSimplicity(
             hal_path or self.DEFAULT_HAL_PATH,
             network_config["hal_network"]
         )
         self.api = BlockstreamAPI(
             network_config["api_url"],
-            "testnet" if config.network == "testnet" else "mainnet"
+            "testnet" if network == "testnet" else "mainnet"
         )
     
     # =========================================================================
@@ -529,7 +533,7 @@ class SAS:
         
         inputs = [{"txid": vault_utxo.txid, "vout": vault_utxo.vout}]
         outputs = [
-            {"address": self.vault_address, "asset": self.asset_id, 
+            {"address": self.vault_address, "asset": self.asset_id,
              "amount": change_sats / 100_000_000},
             {"address": self.certificate_address, "asset": self.asset_id,
              "amount": CERT_SATS / 100_000_000},

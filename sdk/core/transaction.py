@@ -9,6 +9,7 @@ from typing import Literal, Optional
 
 from ..models import UTXO, TransactionResult
 from ..config import SASConfig
+from ..constants import FEE_SATS, CERT_DUST_SATS
 from .witness import WitnessEncoder
 from .contracts import ContractRegistry
 from ..infra.hal import HalSimplicity
@@ -31,10 +32,6 @@ class TransactionBuilder:
     7. Finalize PSET
     8. Extract and broadcast
     """
-    
-    # Default values
-    FEE_SATS = 500
-    CERT_SATS = 546  # Dust limit
     
     def __init__(
         self,
@@ -99,8 +96,8 @@ class TransactionBuilder:
         cert = self.contracts.certificate
         
         # Calculate outputs
-        change_sats = vault_utxo.value - self.FEE_SATS - self.CERT_SATS
-        if change_sats < self.CERT_SATS:
+        change_sats = vault_utxo.value - FEE_SATS - CERT_DUST_SATS
+        if change_sats < CERT_DUST_SATS:
             return TransactionResult(
                 success=False,
                 error=f"Insufficient funds: {vault_utxo.value} sats"
@@ -115,10 +112,10 @@ class TransactionBuilder:
             {"address": vault.address, "asset": self.contracts.asset_id, 
              "amount": self._sats_to_btc(change_sats)},
             {"address": cert.address, "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.CERT_SATS)},
+             "amount": self._sats_to_btc(CERT_DUST_SATS)},
             {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0},
             {"address": "fee", "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.FEE_SATS)}
+             "amount": self._sats_to_btc(FEE_SATS)}
         ]
         
         # Determine spending path
@@ -174,8 +171,8 @@ class TransactionBuilder:
             )
 
         # Calculate outputs
-        if recipient and cert_utxo.value > self.FEE_SATS:
-            output_sats = cert_utxo.value - self.FEE_SATS
+        if recipient and cert_utxo.value > FEE_SATS:
+            output_sats = cert_utxo.value - FEE_SATS
             outputs.append(
                 {"address": recipient, "asset": self.contracts.asset_id,
                  "amount": self._sats_to_btc(output_sats)}
@@ -192,10 +189,10 @@ class TransactionBuilder:
                 {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0}
             )
 
-        if recipient and cert_utxo.value > self.FEE_SATS:
+        if recipient and cert_utxo.value > FEE_SATS:
             outputs.append(
                 {"address": "fee", "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(self.FEE_SATS)}
+                 "amount": self._sats_to_btc(FEE_SATS)}
             )
         
         inputs = [cert_utxo.to_dict()]
@@ -239,8 +236,8 @@ class TransactionBuilder:
         """
         vault = self.contracts.vault
         
-        output_sats = vault_utxo.value - self.FEE_SATS
-        if output_sats < self.CERT_SATS:
+        output_sats = vault_utxo.value - FEE_SATS
+        if output_sats < CERT_DUST_SATS:
             return TransactionResult(
                 success=False,
                 error=f"Insufficient funds: {vault_utxo.value} sats"
@@ -251,7 +248,7 @@ class TransactionBuilder:
             {"address": recipient, "asset": self.contracts.asset_id,
              "amount": self._sats_to_btc(output_sats)},
             {"address": "fee", "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.FEE_SATS)}
+             "amount": self._sats_to_btc(FEE_SATS)}
         ]
         
         dummy_witness = WitnessEncoder.vault_dummy("admin_unconditional")
@@ -393,7 +390,7 @@ class TransactionBuilder:
         vault = self.contracts.vault
         cert = self.contracts.certificate
         
-        change_sats = vault_utxo.value - self.FEE_SATS - self.CERT_SATS
+        change_sats = vault_utxo.value - FEE_SATS - CERT_DUST_SATS
         sap_payload = self._build_sas_attest_payload(cid)
         
         inputs = [vault_utxo.to_dict()]
@@ -401,10 +398,10 @@ class TransactionBuilder:
             {"address": vault.address, "asset": self.contracts.asset_id, 
              "amount": self._sats_to_btc(change_sats)},
             {"address": cert.address, "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.CERT_SATS)},
+             "amount": self._sats_to_btc(CERT_DUST_SATS)},
             {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0},
             {"address": "fee", "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.FEE_SATS)}
+             "amount": self._sats_to_btc(FEE_SATS)}
         ]
         
         if issuer == "admin":
@@ -440,8 +437,8 @@ class TransactionBuilder:
                 cert_utxo.txid, cert_utxo.vout, reason_code, replacement_txid
             )
 
-        if recipient and cert_utxo.value > self.FEE_SATS:
-            output_sats = cert_utxo.value - self.FEE_SATS
+        if recipient and cert_utxo.value > FEE_SATS:
+            output_sats = cert_utxo.value - FEE_SATS
             outputs.append(
                 {"address": recipient, "asset": self.contracts.asset_id,
                  "amount": self._sats_to_btc(output_sats)}
@@ -457,10 +454,10 @@ class TransactionBuilder:
                 {"address": f"data:{sap_payload}", "asset": self.contracts.asset_id, "amount": 0}
             )
 
-        if recipient and cert_utxo.value > self.FEE_SATS:
+        if recipient and cert_utxo.value > FEE_SATS:
             outputs.append(
                 {"address": "fee", "asset": self.contracts.asset_id,
-                 "amount": self._sats_to_btc(self.FEE_SATS)}
+                 "amount": self._sats_to_btc(FEE_SATS)}
             )
         
         inputs = [cert_utxo.to_dict()]
@@ -484,13 +481,13 @@ class TransactionBuilder:
         """Prepare vault drain for external signing."""
         vault = self.contracts.vault
         
-        output_sats = vault_utxo.value - self.FEE_SATS
+        output_sats = vault_utxo.value - FEE_SATS
         inputs = [vault_utxo.to_dict()]
         outputs = [
             {"address": recipient, "asset": self.contracts.asset_id,
              "amount": self._sats_to_btc(output_sats)},
             {"address": "fee", "asset": self.contracts.asset_id,
-             "amount": self._sats_to_btc(self.FEE_SATS)}
+             "amount": self._sats_to_btc(FEE_SATS)}
         ]
         
         dummy_witness = WitnessEncoder.vault_dummy("admin_unconditional")

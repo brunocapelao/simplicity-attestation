@@ -39,6 +39,8 @@ Example (Delegate Operations - Different Company):
 
 import subprocess
 import json
+import hmac
+import re
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import Optional, Literal, List, Union
@@ -50,21 +52,90 @@ from .infra.keys import KeyManager
 from .core.witness import WitnessEncoder
 from .protocols.sas import SAPProtocol
 from .errors import SAPError, VaultEmptyError, InsufficientFundsError
+from .infra.hal import HalSimplicityError
+from .infra.api import BlockstreamAPIError
+from .constants import FEE_SATS, CERT_DUST_SATS, MIN_ISSUE_SATS
 
 
 class CompilationError(SAPError):
-    """Error compiling Simplicity contracts."""
+    """
+    Error during Simplicity contract compilation.
+
+    Raised when:
+    - simc compiler fails to compile .simf files
+    - hal-simplicity fails to derive CMR or program
+    - Contract template files are missing or malformed
+
+    Example:
+        >>> SAS.create_vault(admin_pubkey, delegate_pubkey)
+        CompilationError: Contract not found: /path/to/vault.simf
+    """
     pass
 
 
 class ConfigurationError(SAPError):
-    """Error in SDK configuration."""
+    """
+    Error in SDK configuration.
+
+    Raised when:
+    - Private key doesn't match expected public key in config
+    - Config file is missing required fields
+    - Network configuration is invalid
+
+    Example:
+        >>> SAS.as_admin(config, wrong_private_key)
+        ConfigurationError: Private key doesn't match expected admin configuration.
+    """
     pass
 
 
 class PermissionError(SAPError):
-    """Operation not permitted for current role."""
+    """
+    Operation not permitted for current role.
+
+    Raised when:
+    - Delegate attempts to drain vault (admin-only operation)
+    - Role-restricted operation is attempted
+
+    Example:
+        >>> delegate_sdk.drain_vault(recipient)
+        PermissionError: Only admin can drain vault
+    """
     pass
+
+
+# =============================================================================
+# Input Validation Helpers
+# =============================================================================
+
+def _validate_hex(value: str, name: str, length: int) -> str:
+    """Validate hexadecimal string input."""
+    if not value:
+        raise ValueError(f"{name} cannot be empty")
+    if not re.match(r'^[a-fA-F0-9]+$', value):
+        raise ValueError(f"{name} must be hexadecimal")
+    if len(value) != length:
+        raise ValueError(f"{name} must be {length} hex characters, got {len(value)}")
+    return value.lower()
+
+
+def _validate_cid(cid: str) -> str:
+    """Validate CID input for certificate issuance."""
+    if not cid:
+        raise ValueError("CID cannot be empty")
+    cid_bytes = cid.encode('utf-8') if not _is_hex(cid) else bytes.fromhex(cid)
+    if len(cid_bytes) > 75:
+        raise ValueError(f"CID exceeds 75 byte limit (got {len(cid_bytes)} bytes)")
+    return cid
+
+
+def _is_hex(value: str) -> bool:
+    """Check if string is valid hexadecimal."""
+    try:
+        bytes.fromhex(value)
+        return len(value) % 2 == 0
+    except ValueError:
+        return False
 
 
 def _script_pubkey_to_address(script_pubkey: str, network: str) -> str:
@@ -166,11 +237,15 @@ class VaultConfig:
 class SAS:
     """
     Simplicity Attestation Protocol SDK.
-    
+
     Separates vault creation from operation:
     - create_vault(): Only needs PUBLIC keys
     - as_admin(): Operate as admin with admin's private key
     - as_delegate(): Operate as delegate with delegate's private key
+
+    WARNING: This SDK is NOT thread-safe. Concurrent operations on the same
+    vault may result in UTXO conflicts. Use external locking if multi-threaded
+    access is required.
     """
     
     # Network configurations
@@ -314,19 +389,22 @@ class SAS:
     ) -> "SAS":
         """
         Create SDK instance as DELEGATE.
-        
+
         Delegate can:
         - Issue certificates
-        - Revoke own certificates
-        
+        - Revoke ANY certificate (same as admin)
+
         Cannot:
-        - Drain vault
-        - Revoke admin's certificates
-        
+        - Drain vault (deactivate delegate) - admin only
+
+        Note: The on-chain certificate contract allows both admin AND delegate
+        to revoke any certificate. This is by design - revocation is a safety
+        feature, not an ownership restriction.
+
         Args:
             config: VaultConfig or path to config JSON.
             private_key: Delegate private key (64 hex chars).
-        
+
         Returns:
             SAS instance configured as delegate.
         """
@@ -356,12 +434,12 @@ class SAS:
         self.role = role
         self._key = KeyManager(private_key)
 
-        # Verify key matches expected pubkey
+        # Verify key matches expected pubkey (constant-time comparison)
         expected_pub = config.admin_pubkey if role == "admin" else config.delegate_pubkey
-        if self._key.public_key != expected_pub:
+        if not hmac.compare_digest(self._key.public_key.encode(), expected_pub.encode()):
             raise ConfigurationError(
-                f"Private key doesn't match {role} pubkey. "
-                f"Expected: {expected_pub[:16]}..., Got: {self._key.public_key[:16]}..."
+                f"Private key doesn't match expected {role} configuration. "
+                "Verify the correct private key is being used."
             )
 
         # Normalize network name: "liquidtestnet" -> "testnet"
@@ -443,22 +521,30 @@ class SAS:
     def issue_certificate(self, cid: str) -> TransactionResult:
         """
         Issue a new certificate.
-        
+
         Both admin and delegate can issue.
-        
+
         Args:
-            cid: Content ID (IPFS CID or hash) to embed.
-        
+            cid: Content ID (IPFS CID or hash) to embed. Max 75 bytes.
+
         Returns:
             TransactionResult with txid.
+
+        Raises:
+            ValueError: If CID is empty or exceeds 75 bytes.
+            InsufficientFundsError: If vault balance is below minimum.
+            VaultEmptyError: If vault has no UTXOs.
         """
+        # Validate CID before doing any work
+        cid = _validate_cid(cid)
+
         vault = self.get_vault()
         if not vault.can_issue:
-            raise InsufficientFundsError(1046, vault.balance)
-        
+            raise InsufficientFundsError(MIN_ISSUE_SATS, vault.balance)
+
         if not vault.available_utxo:
             raise VaultEmptyError(self.vault_address)
-        
+
         return self._build_and_sign_issue(vault.available_utxo, cid)
     
     def revoke_certificate(
@@ -471,17 +557,29 @@ class SAS:
     ) -> TransactionResult:
         """
         Revoke a certificate.
-        
-        Admin can revoke any. Delegate can only revoke own.
-        
+
+        Both admin AND delegate can revoke ANY certificate. This is by design -
+        revocation is a safety feature to ensure compromised certificates can
+        be quickly invalidated by either party.
+
         Args:
-            txid: Certificate transaction ID.
+            txid: Certificate transaction ID (64 hex characters).
             vout: Output index (default 1).
             recipient: Where to send funds (optional).
-        
+            reason_code: Optional revocation reason (0-255).
+            replacement_txid: Optional replacement certificate txid (64 hex chars).
+
         Returns:
             TransactionResult.
+
+        Raises:
+            ValueError: If txid or replacement_txid is not valid hex.
         """
+        # Validate inputs
+        txid = _validate_hex(txid, "txid", 64)
+        if replacement_txid:
+            replacement_txid = _validate_hex(replacement_txid, "replacement_txid", 64)
+
         cert_utxos = self.api.get_utxos(self.certificate_address)
         cert_utxo = next(
             (u for u in cert_utxos if u.txid == txid and u.vout == vout),
@@ -525,10 +623,8 @@ class SAS:
     
     def _build_and_sign_issue(self, vault_utxo: UTXO, cid: str) -> TransactionResult:
         """Build and sign certificate issuance."""
-        FEE_SATS = 500
-        CERT_SATS = 546
         
-        change_sats = vault_utxo.value - FEE_SATS - CERT_SATS
+        change_sats = vault_utxo.value - FEE_SATS - CERT_DUST_SATS
         sap_payload = self._build_sas_payload(cid)
         
         inputs = [{"txid": vault_utxo.txid, "vout": vault_utxo.vout}]
@@ -536,7 +632,7 @@ class SAS:
             {"address": self.vault_address, "asset": self.asset_id,
              "amount": change_sats / 100_000_000},
             {"address": self.certificate_address, "asset": self.asset_id,
-             "amount": CERT_SATS / 100_000_000},
+             "amount": CERT_DUST_SATS / 100_000_000},
             {"address": f"data:{sap_payload}", "asset": self.asset_id, "amount": 0},
             {"address": "fee", "asset": self.asset_id, "amount": FEE_SATS / 100_000_000}
         ]
@@ -568,10 +664,14 @@ class SAS:
             tx_hex = self.hal.pset_extract(finalized)
             
             return self.api.broadcast(tx_hex)
-            
-        except Exception as e:
+
+        except (HalSimplicityError, BlockstreamAPIError) as e:
             return TransactionResult(success=False, error=str(e))
-    
+        except json.JSONDecodeError as e:
+            return TransactionResult(success=False, error=f"JSON parse error: {e}")
+        except ValueError as e:
+            return TransactionResult(success=False, error=f"Validation error: {e}")
+
     def _build_and_sign_revoke(
         self,
         cert_utxo: UTXO,
@@ -580,7 +680,6 @@ class SAS:
         replacement_txid: Optional[str]
     ) -> TransactionResult:
         """Build and sign certificate revocation."""
-        FEE_SATS = 500
         
         inputs = [{"txid": cert_utxo.txid, "vout": cert_utxo.vout}]
         
@@ -636,13 +735,16 @@ class SAS:
             tx_hex = self.hal.pset_extract(finalized)
             
             return self.api.broadcast(tx_hex)
-            
-        except Exception as e:
+
+        except (HalSimplicityError, BlockstreamAPIError) as e:
             return TransactionResult(success=False, error=str(e))
-    
+        except json.JSONDecodeError as e:
+            return TransactionResult(success=False, error=f"JSON parse error: {e}")
+        except ValueError as e:
+            return TransactionResult(success=False, error=f"Validation error: {e}")
+
     def _build_and_sign_drain(self, vault_utxo: UTXO, recipient: str) -> TransactionResult:
         """Build and sign vault drain (admin unconditional)."""
-        FEE_SATS = 500
         output_sats = vault_utxo.value - FEE_SATS
         
         inputs = [{"txid": vault_utxo.txid, "vout": vault_utxo.vout}]
@@ -678,10 +780,14 @@ class SAS:
             tx_hex = self.hal.pset_extract(finalized)
             
             return self.api.broadcast(tx_hex)
-            
-        except Exception as e:
+
+        except (HalSimplicityError, BlockstreamAPIError) as e:
             return TransactionResult(success=False, error=str(e))
-    
+        except json.JSONDecodeError as e:
+            return TransactionResult(success=False, error=f"JSON parse error: {e}")
+        except ValueError as e:
+            return TransactionResult(success=False, error=f"Validation error: {e}")
+
     def _build_sas_payload(self, cid: str) -> str:
         """Build SAS OP_RETURN payload."""
         magic = b"SAS"
@@ -729,10 +835,9 @@ class SAS:
             raise CompilationError(f"Contract not found: {template_path}")
         
         content = template_path.read_text()
-        
+
         # Find pubkeys by context: look for "let xxx_pk: Pubkey = 0x..." pattern
         # This avoids replacing non-pubkey hex values like cert_script_hash
-        import re
         
         # Pattern: variable name containing "pk" or "pubkey" followed by hex
         admin_pattern = r'(admin_pk:\s*Pubkey\s*=\s*0x)([a-f0-9]{64})'
@@ -821,7 +926,7 @@ class SAS:
             "active_certificates": len(certs),
             "permissions": {
                 "issue": True,
-                "revoke_any": self.role == "admin",
+                "revoke_any": True,  # Both admin and delegate can revoke any certificate
                 "drain_vault": self.role == "admin",
             }
         }

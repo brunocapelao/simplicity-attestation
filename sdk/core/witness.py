@@ -4,27 +4,45 @@ SAS SDK - Witness Encoder
 Handles bit-level encoding of witnesses for Simplicity spending paths.
 """
 
-from typing import Literal
+from typing import Literal, Union
 
 
 class WitnessEncoder:
     """
     Encodes witnesses for Simplicity spending paths.
-    
+
     Simplicity uses a tree structure for spending paths encoded in bits:
     - Left = 0
     - Right = 1
-    
+
     Vault paths:
     - Left: Admin unconditional (0 + sig + 7 padding)
-    - Right-Left: Admin issue certificate (10 + sig + 6 padding)  
+    - Right-Left: Admin issue certificate (10 + sig + 6 padding)
     - Right-Right: Delegate issue certificate (11 + sig + 6 padding)
-    
+
     Certificate paths:
     - Left: Admin revoke (0 + sig + 7 padding)
     - Right: Delegate revoke (1 + sig + 7 padding)
     """
-    
+
+    @staticmethod
+    def _normalize_signature(signature: Union[bytes, str]) -> bytes:
+        """
+        Normalize signature to bytes.
+
+        Accepts:
+        - bytes: 64-byte signature
+        - str: 128-char hex string (64 bytes)
+
+        Returns:
+            64-byte signature as bytes.
+        """
+        if isinstance(signature, str):
+            signature = bytes.fromhex(signature)
+        if len(signature) != 64:
+            raise ValueError(f"Signature must be 64 bytes, got {len(signature)}")
+        return signature
+
     @staticmethod
     def _signature_to_bits(signature: bytes) -> str:
         """Convert 64-byte signature to 512-bit string."""
@@ -155,21 +173,22 @@ class WitnessEncoder:
     @classmethod
     def encode_vault_witness(
         cls,
-        signature: bytes,
+        signature: Union[bytes, str],
         issuer: Literal["admin", "delegate"],
         unconditional: bool = False
     ) -> str:
         """
         Encode vault witness for any spending path.
-        
+
         Args:
-            signature: 64-byte Schnorr signature.
+            signature: 64-byte Schnorr signature (bytes or 128-char hex string).
             issuer: "admin" or "delegate".
             unconditional: If True and issuer is admin, use unconditional path.
-        
+
         Returns:
             Hex-encoded witness.
         """
+        signature = cls._normalize_signature(signature)
         if issuer == "admin":
             if unconditional:
                 return cls.vault_admin_unconditional(signature)
@@ -177,23 +196,24 @@ class WitnessEncoder:
                 return cls.vault_admin_issue(signature)
         else:
             return cls.vault_delegate_issue(signature)
-    
+
     @classmethod
     def encode_certificate_witness(
         cls,
-        signature: bytes,
+        signature: Union[bytes, str],
         revoker: Literal["admin", "delegate"]
     ) -> str:
         """
         Encode certificate witness for revocation.
-        
+
         Args:
-            signature: 64-byte Schnorr signature.
+            signature: 64-byte Schnorr signature (bytes or 128-char hex string).
             revoker: "admin" or "delegate".
-        
+
         Returns:
             Hex-encoded witness.
         """
+        signature = cls._normalize_signature(signature)
         if revoker == "admin":
             return cls.certificate_admin(signature)
         else:

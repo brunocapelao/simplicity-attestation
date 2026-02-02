@@ -232,14 +232,32 @@ class SAPProtocol:
             return SAPAttest(cid=cid, version=version)
         
         elif op_type == cls.TYPE_REVOKE:
+            # Minimum payload: 32 (txid) + 2 (vout) = 34 bytes
             if len(payload) < 34:
                 return None
+
             txid = payload[:32].hex()
             vout = int.from_bytes(payload[32:34], 'big')
-            if len(payload) == 66:
+
+            reason_code = None
+            replacement_txid = None
+
+            # Valid payload lengths:
+            # - 34 bytes: txid + vout only
+            # - 35 bytes: txid + vout + reason_code
+            # - 67 bytes: txid + vout + reason_code + replacement_txid (32 bytes)
+            # Anything else (36-66 bytes) is partial/corrupted - reject
+            if len(payload) == 34:
+                pass  # No reason_code or replacement
+            elif len(payload) == 35:
+                reason_code = payload[34]
+            elif len(payload) == 67:
+                reason_code = payload[34]
+                replacement_txid = payload[35:67].hex()
+            else:
+                # Invalid length - partial data or corrupted
                 return None
-            reason_code = payload[34] if len(payload) >= 35 else None
-            replacement_txid = payload[35:67].hex() if len(payload) >= 67 else None
+
             return SAPRevoke(
                 txid=txid,
                 vout=vout,

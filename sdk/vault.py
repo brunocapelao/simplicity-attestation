@@ -367,7 +367,7 @@ class VaultFunder:
     Note: Actual funding requires L-BTC from an external source.
     """
     
-    MIN_DEPOSIT = 1046  # Minimum for 1 certificate + fees
+    MIN_DEPOSIT = 1592  # Minimum for 1 certificate (546) + fee (500) + change (546)
     RECOMMENDED_DEPOSIT = 100000  # ~100 certificates
     
     def __init__(self, api: Optional[BlockstreamAPI] = None, network: str = "testnet"):

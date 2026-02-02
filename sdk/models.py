@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 from enum import Enum
 
+from .constants import MIN_ISSUE_SATS, CERT_DUST_SATS, FEE_SATS
+
 
 class CertificateStatus(Enum):
     """Certificate validity status."""
@@ -79,13 +81,19 @@ class Vault:
     program: str
     balance: int = 0  # total satoshis
     utxos: List[UTXO] = field(default_factory=list)
-    
+
     @property
     def can_issue(self) -> bool:
-        """Check if vault has enough funds to issue a certificate."""
-        MIN_REQUIRED = 546 + 500  # cert dust + fee
-        return self.balance >= MIN_REQUIRED
-    
+        """
+        Check if vault has enough funds to issue a certificate.
+
+        Requires balance >= MIN_ISSUE_SATS (1592 sats) to ensure:
+        - Certificate output: 546 sats (dust limit)
+        - Fee: 500 sats
+        - Change back to vault: >= 546 sats (must be non-zero for covenant)
+        """
+        return self.balance >= MIN_ISSUE_SATS
+
     @property
     def available_utxo(self) -> Optional[UTXO]:
         """Get the first available UTXO for spending."""
@@ -99,13 +107,21 @@ class TransactionResult:
     txid: Optional[str] = None
     raw_hex: Optional[str] = None
     error: Optional[str] = None
-    
-    @property
-    def explorer_url(self) -> Optional[str]:
-        """Get Blockstream explorer URL for this transaction."""
-        if self.txid:
-            return f"https://blockstream.info/liquidtestnet/tx/{self.txid}"
-        return None
+
+    def explorer_url(self, network: str = "testnet") -> Optional[str]:
+        """
+        Get Blockstream explorer URL for this transaction.
+
+        Args:
+            network: "testnet" or "mainnet".
+
+        Returns:
+            Explorer URL or None if no txid.
+        """
+        if not self.txid:
+            return None
+        subdomain = "liquidtestnet" if network == "testnet" else "liquid"
+        return f"https://blockstream.info/{subdomain}/tx/{self.txid}"
 
 
 @dataclass

@@ -11,6 +11,7 @@ import logging
 
 from .config import SASConfig
 from .models import Certificate, Vault, TransactionResult, CertificateStatus
+from .constants import MIN_ISSUE_SATS
 from .core.transaction import TransactionBuilder
 from .core.contracts import ContractRegistry
 from .infra.hal import HalSimplicity
@@ -402,7 +403,7 @@ class SAPClient:
         vault = self.get_vault()
         if not vault.can_issue:
             raise InsufficientFundsError(
-                required=1046,
+                required=MIN_ISSUE_SATS,
                 available=vault.balance,
                 message="Vault has insufficient funds for issuance"
             )

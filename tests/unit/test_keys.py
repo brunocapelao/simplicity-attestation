@@ -2,8 +2,9 @@
 Unit tests for KeyManager (cryptographic key operations).
 """
 
-import pytest
 import pickle
+
+import pytest
 
 
 class TestKeyManagerBasic:

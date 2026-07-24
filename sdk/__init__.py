@@ -35,62 +35,61 @@ Legacy usage (with secrets.json):
 """
 
 # New unified API
-from .sas import SAS
-
 # Legacy client
 from .client import SAPClient
-from .config import SASConfig, NetworkConfig, ContractInfo
-from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
+from .config import ContractInfo, NetworkConfig, SASConfig
 
-# External signature support
-from .prepared import PreparedTransaction, TransactionType, SignedTransaction
-
-# Key providers
-from .providers import (
-    KeyProvider,
-    EnvKeyProvider,
-    MemoryKeyProvider,
-    FileKeyProvider,
-)
-
-# Roles and permissions
-from .roles import Role, RoleContext, Permissions, PermissionError
+# Confirmation tracking
+from .confirmation import ConfirmationStatus, ConfirmationTracker, TxStatus
 
 # Error types
 from .errors import (
-    SAPError,
-    ConfigurationError,
-    TransactionError,
-    InsufficientFundsError,
     BroadcastError,
-    ConfirmationTimeoutError,
+    CertificateAlreadyRevokedError,
     CertificateError,
     CertificateNotFoundError,
-    CertificateAlreadyRevokedError,
-    VaultError,
-    VaultEmptyError,
+    ConfigurationError,
+    ConfirmationTimeoutError,
+    HalSimplicityError,
+    InsufficientFundsError,
     NetworkError,
     PayloadTooLargeError,
-    HalSimplicityError,
+    SAPError,
+    TransactionError,
+    VaultEmptyError,
+    VaultError,
 )
 
-# Confirmation tracking
-from .confirmation import ConfirmationTracker, ConfirmationStatus, TxStatus
+# Event hooks
+from .events import Event, EventEmitter, EventType
 
 # Fee estimation
-from .fees import FeeEstimator, FeeEstimate, FeePriority
-
-# Event hooks
-from .events import EventEmitter, EventType, Event
+from .fees import FeeEstimate, FeeEstimator, FeePriority
 
 # Logging
-from .logging import StructuredLogger, LogLevel, create_file_logger
+from .logging import LogLevel, StructuredLogger, create_file_logger
+from .models import UTXO, Certificate, CertificateStatus, TransactionResult, Vault
 
-# Vault creation and funding
-from .vault import VaultBuilder, VaultFunder, VaultSetup
+# External signature support
+from .prepared import PreparedTransaction, SignedTransaction, TransactionType
+
+# Key providers
+from .providers import (
+    EnvKeyProvider,
+    FileKeyProvider,
+    KeyProvider,
+    MemoryKeyProvider,
+)
+
+# Roles and permissions
+from .roles import PermissionError, Permissions, Role, RoleContext
+from .sas import SAS
 
 # Tool management
 from .tools import ToolManager, ensure_tools, get_tool_path
+
+# Vault creation and funding
+from .vault import VaultBuilder, VaultFunder, VaultSetup
 
 __version__ = "0.6.0"
 __all__ = [

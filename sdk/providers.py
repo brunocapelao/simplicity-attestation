@@ -7,8 +7,8 @@ Separates key storage/signing from SDK logic for security best practices.
 
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
-from embit import ec
+
+from embit import ec  # type: ignore[import-untyped]
 
 
 class KeyProvider(ABC):
@@ -35,7 +35,6 @@ class KeyProvider(ABC):
         Returns:
             64-character hex string (32 bytes x-only pubkey).
         """
-        pass
     
     @abstractmethod
     def sign(self, message: bytes) -> bytes:
@@ -48,7 +47,6 @@ class KeyProvider(ABC):
         Returns:
             64-byte Schnorr signature.
         """
-        pass
     
     def sign_hex(self, message_hex: str) -> bytes:
         """
@@ -95,15 +93,15 @@ class EnvKeyProvider(KeyProvider):
             )
         
         self._private_key = ec.PrivateKey(bytes.fromhex(private_key_hex))
-        self._public_key = self._private_key.get_public_key().xonly().hex()
+        self._public_key = str(self._private_key.get_public_key().xonly().hex())
     
     @property
     def public_key(self) -> str:
-        return self._public_key
+        return str(self._public_key)
     
     def sign(self, message: bytes) -> bytes:
         signature = self._private_key.schnorr_sign(message)
-        return signature.serialize()
+        return bytes(signature.serialize())
 
 
 class MemoryKeyProvider(KeyProvider):
@@ -129,15 +127,15 @@ class MemoryKeyProvider(KeyProvider):
             raise ValueError("Private key must be 64 hex characters (32 bytes)")
         
         self._private_key = ec.PrivateKey(bytes.fromhex(private_key_hex))
-        self._public_key = self._private_key.get_public_key().xonly().hex()
+        self._public_key = str(self._private_key.get_public_key().xonly().hex())
     
     @property
     def public_key(self) -> str:
-        return self._public_key
+        return str(self._public_key)
     
     def sign(self, message: bytes) -> bytes:
         signature = self._private_key.schnorr_sign(message)
-        return signature.serialize()
+        return bytes(signature.serialize())
 
 
 class FileKeyProvider(KeyProvider):
@@ -157,19 +155,19 @@ class FileKeyProvider(KeyProvider):
         Args:
             key_file_path: Path to file containing private key hex.
         """
-        with open(key_file_path, 'r') as f:
+        with open(key_file_path) as f:
             private_key_hex = f.read().strip()
         
         self._private_key = ec.PrivateKey(bytes.fromhex(private_key_hex))
-        self._public_key = self._private_key.get_public_key().xonly().hex()
+        self._public_key = str(self._private_key.get_public_key().xonly().hex())
     
     @property
     def public_key(self) -> str:
-        return self._public_key
+        return str(self._public_key)
     
     def sign(self, message: bytes) -> bytes:
         signature = self._private_key.schnorr_sign(message)
-        return signature.serialize()
+        return bytes(signature.serialize())
 
 
 # =============================================================================
@@ -213,7 +211,7 @@ class HashiCorpVaultProvider(KeyProvider):
     - Transit secrets engine
     """
     
-    def __init__(self, vault_addr: str, key_name: str, token: Optional[str] = None):
+    def __init__(self, vault_addr: str, key_name: str, token: str | None = None):
         raise NotImplementedError(
             "HashiCorp Vault provider not yet implemented. "
             "Use EnvKeyProvider or MemoryKeyProvider for now."

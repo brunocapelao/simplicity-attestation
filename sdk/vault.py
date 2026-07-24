@@ -5,26 +5,23 @@ Functions for creating and funding vaults.
 Handles contract compilation and initial setup.
 """
 
-import subprocess
-import json
 import hashlib
-from pathlib import Path
+import json
+import subprocess
 from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
 
 from .config import ContractInfo, NetworkConfig
-from .infra.api import BlockstreamAPI
 from .errors import SAPError
+from .infra.api import BlockstreamAPI
 
 
 class VaultBuilderError(SAPError):
     """Error during vault creation or funding."""
-    pass
 
 
 class CompilationError(VaultBuilderError):
     """Error compiling Simfony contracts."""
-    pass
 
 
 @dataclass
@@ -140,9 +137,9 @@ fn main() {{
     
     def __init__(
         self,
-        simc_path: Optional[str] = None,
-        hal_path: Optional[str] = None,
-        contracts_dir: Optional[str] = None
+        simc_path: str | None = None,
+        hal_path: str | None = None,
+        contracts_dir: str | None = None
     ):
         """
         Initialize vault builder.
@@ -160,10 +157,10 @@ fn main() {{
         self,
         admin_public_key: str,
         delegate_public_key: str,
-        internal_key: Optional[str] = None,
+        internal_key: str | None = None,
         network: str = "liquidtestnet",
-        vault_contract_path: Optional[str] = None,
-        certificate_contract_path: Optional[str] = None
+        vault_contract_path: str | None = None,
+        certificate_contract_path: str | None = None
     ) -> VaultSetup:
         """
         Create a new SAS vault.
@@ -370,7 +367,7 @@ class VaultFunder:
     MIN_DEPOSIT = 1592  # Minimum for 1 certificate (546) + fee (500) + change (546)
     RECOMMENDED_DEPOSIT = 100000  # ~100 certificates
     
-    def __init__(self, api: Optional[BlockstreamAPI] = None, network: str = "testnet"):
+    def __init__(self, api: BlockstreamAPI | None = None, network: str = "testnet"):
         """
         Initialize funder.
         
@@ -384,7 +381,7 @@ class VaultFunder:
     def get_deposit_instruction(
         self,
         vault_address: str,
-        amount: Optional[int] = None
+        amount: int | None = None
     ) -> dict:
         """
         Get deposit instruction for a vault.

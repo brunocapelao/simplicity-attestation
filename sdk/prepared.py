@@ -5,11 +5,11 @@ Data structures for transactions pending external signatures.
 Enables multisig, hardware wallets, and approval workflows.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Literal, Dict, Any
-from enum import Enum
-import time
 import json
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Literal
 
 
 class TransactionType(Enum):
@@ -64,10 +64,10 @@ class PreparedTransaction:
     witness_template: str = ""  # Witness without signature
     
     # Human-readable details for approval
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     
     # Expiration (prevent stale transactions)
-    expires_at: Optional[float] = None
+    expires_at: float | None = None
     
     @property
     def sig_hash_bytes(self) -> bytes:

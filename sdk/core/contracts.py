@@ -5,7 +5,6 @@ Manages contract information and provides contract-specific utilities.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ..config import SASConfig
 
@@ -76,7 +75,7 @@ class ContractRegistry:
         """Get the Taproot internal key."""
         return self.config.internal_key
     
-    def get_contract(self, name: str) -> Optional[Contract]:
+    def get_contract(self, name: str) -> Contract | None:
         """
         Get contract by name.
         

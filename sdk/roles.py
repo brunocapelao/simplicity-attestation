@@ -5,9 +5,8 @@ Role-based access control for Admin and Delegate operations.
 Enforces least-privilege principle at the SDK level.
 """
 
-from enum import Enum
-from typing import Set
 from dataclasses import dataclass
+from enum import Enum
 
 from .errors import SAPError
 
@@ -68,7 +67,7 @@ class Permissions:
 
 
 # Role to permissions mapping
-ROLE_PERMISSIONS: dict[Role, Set[Permission]] = {
+ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.ADMIN: {
         Permissions.VAULT_READ,
         Permissions.VAULT_DRAIN,

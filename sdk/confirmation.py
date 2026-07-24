@@ -4,14 +4,14 @@ SAS SDK - Transaction Confirmation Tracking
 Provides async transaction confirmation waiting and status tracking.
 """
 
-import time
 import threading
-from typing import Optional, Callable, List
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
-from .infra.api import BlockstreamAPI
 from .errors import ConfirmationTimeoutError, TransactionNotFoundError
+from .infra.api import BlockstreamAPI
 
 
 class TxStatus(Enum):
@@ -29,9 +29,9 @@ class ConfirmationStatus:
     txid: str
     status: TxStatus
     confirmations: int = 0
-    block_height: Optional[int] = None
-    block_hash: Optional[str] = None
-    timestamp: Optional[int] = None
+    block_height: int | None = None
+    block_hash: str | None = None
+    timestamp: int | None = None
     
     @property
     def is_confirmed(self) -> bool:
@@ -61,7 +61,7 @@ class ConfirmationTracker:
     DEFAULT_POLL_INTERVAL = 10  # seconds
     DEFAULT_TIMEOUT = 600       # 10 minutes
     
-    def __init__(self, api: BlockstreamAPI, poll_interval: int = None):
+    def __init__(self, api: BlockstreamAPI, poll_interval: int | None = None):
         """
         Initialize confirmation tracker.
         
@@ -71,9 +71,9 @@ class ConfirmationTracker:
         """
         self.api = api
         self.poll_interval = poll_interval or self.DEFAULT_POLL_INTERVAL
-        self._callbacks: List[ConfirmationCallback] = []
+        self._callbacks: list[ConfirmationCallback] = []
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
     
     def get_status(self, txid: str) -> ConfirmationStatus:
         """
@@ -130,8 +130,8 @@ class ConfirmationTracker:
         self,
         txid: str,
         target_confirmations: int = 1,
-        timeout: int = None,
-        poll_interval: int = None
+        timeout: int | None = None,
+        poll_interval: int | None = None
     ) -> ConfirmationStatus:
         """
         Wait synchronously for transaction confirmation.

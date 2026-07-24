@@ -1,7 +1,7 @@
 """Core layer package."""
 
-from .witness import WitnessEncoder
-from .transaction import TransactionBuilder
 from .contracts import ContractRegistry
+from .transaction import TransactionBuilder
+from .witness import WitnessEncoder
 
-__all__ = ["WitnessEncoder", "TransactionBuilder", "ContractRegistry"]
+__all__ = ["ContractRegistry", "TransactionBuilder", "WitnessEncoder"]

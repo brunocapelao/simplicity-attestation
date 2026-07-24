@@ -5,7 +5,6 @@ Encoder and decoder for the SAS OP_RETURN protocol.
 """
 
 from dataclasses import dataclass
-from typing import Optional, Union
 
 
 @dataclass
@@ -20,8 +19,8 @@ class SAPRevoke:
     """SAS Revocation payload."""
     txid: str
     vout: int
-    reason_code: Optional[int] = None
-    replacement_txid: Optional[str] = None
+    reason_code: int | None = None
+    replacement_txid: str | None = None
     version: int = 1
 
 
@@ -81,7 +80,6 @@ class SAPProtocol:
     
     class PayloadTooLargeError(Exception):
         """Raised when payload exceeds OP_RETURN size limit."""
-        pass
     
     @classmethod
     def validate_payload_size(cls, payload: bytes, payload_type: str = "payload") -> None:
@@ -135,8 +133,8 @@ class SAPProtocol:
         cls,
         txid: str,
         vout: int,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None
+        reason_code: int | None = None,
+        replacement_txid: str | None = None
     ) -> str:
         """
         Encode a revocation OP_RETURN payload.
@@ -199,7 +197,7 @@ class SAPProtocol:
         return (header + cid_bytes).hex()
     
     @classmethod
-    def decode(cls, data: bytes) -> Optional[Union[SAPAttest, SAPRevoke, SAPUpdate]]:
+    def decode(cls, data: bytes) -> SAPAttest | SAPRevoke | SAPUpdate | None:
         """
         Decode a SAS OP_RETURN payload.
         
@@ -276,7 +274,7 @@ class SAPProtocol:
         return None
     
     @classmethod
-    def decode_hex(cls, hex_data: str) -> Optional[Union[SAPAttest, SAPRevoke, SAPUpdate]]:
+    def decode_hex(cls, hex_data: str) -> SAPAttest | SAPRevoke | SAPUpdate | None:
         """
         Decode a hex-encoded SAS OP_RETURN payload.
         

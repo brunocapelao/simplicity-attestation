@@ -6,19 +6,15 @@ external binaries (hal-simplicity). They use mocking to simulate
 the infrastructure layer.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-import json
+from unittest.mock import Mock, patch
 
-from sdk.models import UTXO, Vault, TransactionResult
-from sdk.constants import MIN_ISSUE_SATS, FEE_SATS, CERT_DUST_SATS
+import pytest
+
+from sdk.constants import CERT_DUST_SATS, FEE_SATS, MIN_ISSUE_SATS
 from sdk.errors import (
     SAPError,
-    VaultEmptyError, 
-    InsufficientFundsError,
-    CertificateNotFoundError,
 )
-
+from sdk.models import UTXO, Vault
 
 # =============================================================================
 # Configuration Validation Tests
@@ -32,7 +28,6 @@ class TestConfigurationValidation:
     def test_mismatched_private_key_rejected(self):
         """Test that SDK rejects private key that doesn't match config."""
         from sdk.sas import SAS, ConfigurationError
-        from sdk.infra.keys import KeyManager
         
         # Create a mock config with specific admin pubkey
         mock_config = Mock()
@@ -56,8 +51,9 @@ class TestConfigurationValidation:
     @pytest.mark.security
     def test_empty_private_key_rejected(self):
         """Test that SDK rejects empty private key."""
-        from sdk.sas import SAS
         from embit.ec import ECError
+
+        from sdk.sas import SAS
         
         mock_config = Mock()
         mock_config.admin_pubkey = "a" * 64
@@ -266,8 +262,9 @@ class TestAPIErrorHandling:
     @pytest.mark.unit
     def test_api_timeout_handled(self):
         """Test that API timeout is handled gracefully."""
-        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         import requests
+
+        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         
         api = BlockstreamAPI(network="testnet")
         
@@ -281,8 +278,9 @@ class TestAPIErrorHandling:
     @pytest.mark.unit
     def test_api_connection_error_handled(self):
         """Test that connection error is handled."""
-        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         import requests
+
+        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         
         api = BlockstreamAPI(network="testnet")
         
@@ -295,8 +293,9 @@ class TestAPIErrorHandling:
     @pytest.mark.unit
     def test_api_invalid_json_raises_error(self):
         """Test that invalid JSON raises BlockstreamAPIError."""
-        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         import requests
+
+        from sdk.infra.api import BlockstreamAPI
         
         api = BlockstreamAPI(network="testnet")
         
@@ -317,8 +316,9 @@ class TestAPIErrorHandling:
     @pytest.mark.unit
     def test_api_http_error_handled(self):
         """Test that HTTP errors raise BlockstreamAPIError."""
-        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         import requests
+
+        from sdk.infra.api import BlockstreamAPI, BlockstreamAPIError
         
         api = BlockstreamAPI(network="testnet")
         

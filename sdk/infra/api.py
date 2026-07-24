@@ -4,15 +4,15 @@ SAS SDK - Blockstream API Client
 Handles all blockchain interactions via the Blockstream Esplora API.
 """
 
+from typing import cast
+
 import requests
-from typing import Optional, List
 
 from ..models import UTXO, TransactionResult
 
 
 class BlockstreamAPIError(Exception):
     """Error from Blockstream API."""
-    pass
 
 
 class BlockstreamAPI:
@@ -25,7 +25,7 @@ class BlockstreamAPI:
     TESTNET_URL = "https://blockstream.info/liquidtestnet/api"
     MAINNET_URL = "https://blockstream.info/liquid/api"
     
-    def __init__(self, base_url: Optional[str] = None, network: str = "testnet"):
+    def __init__(self, base_url: str | None = None, network: str = "testnet"):
         """
         Initialize API client.
         
@@ -49,7 +49,7 @@ class BlockstreamAPI:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-            return response.json()
+            return cast(dict, response.json())
         except requests.RequestException as e:
             raise BlockstreamAPIError(f"API request failed: {e}")
     
@@ -71,7 +71,7 @@ class BlockstreamAPI:
     # Address Operations
     # =========================================================================
     
-    def get_utxos(self, address: str) -> List[UTXO]:
+    def get_utxos(self, address: str) -> list[UTXO]:
         """
         Get all UTXOs for an address.
         
@@ -141,7 +141,7 @@ class BlockstreamAPI:
                 raw_hex=tx_hex
             )
     
-    def get_transaction(self, txid: str) -> Optional[dict]:
+    def get_transaction(self, txid: str) -> dict | None:
         """
         Get transaction details.
         
@@ -156,7 +156,7 @@ class BlockstreamAPI:
         except BlockstreamAPIError:
             return None
     
-    def get_tx_status(self, txid: str) -> Optional[dict]:
+    def get_tx_status(self, txid: str) -> dict | None:
         """
         Get transaction confirmation status.
         
@@ -184,11 +184,11 @@ class BlockstreamAPI:
         """
         try:
             spending = self._get(f"tx/{txid}/outspend/{vout}")
-            return spending.get("spent", False)
+            return bool(spending.get("spent", False))
         except BlockstreamAPIError:
             return False
     
-    def get_outspend(self, txid: str, vout: int) -> Optional[dict]:
+    def get_outspend(self, txid: str, vout: int) -> dict | None:
         """
         Get spending information for a UTXO.
         

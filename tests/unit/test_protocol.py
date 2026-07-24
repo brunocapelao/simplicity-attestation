@@ -3,7 +3,8 @@ Unit tests for SAS Protocol (OP_RETURN encoding/decoding).
 """
 
 import pytest
-from sdk.protocols.sas import SAPProtocol, SAPAttest, SAPRevoke, SAPUpdate
+
+from sdk.protocols.sas import SAPAttest, SAPProtocol, SAPRevoke, SAPUpdate
 
 
 class TestSAPProtocolEncode:

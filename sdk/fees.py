@@ -4,9 +4,9 @@ SAS SDK - Fee Estimation
 Dynamic fee estimation for Liquid Network transactions.
 """
 
-from typing import Optional, Literal
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 from .infra.api import BlockstreamAPI
 
@@ -68,7 +68,7 @@ class FeeEstimator:
     # Minimum fee for Liquid
     MIN_FEE_SATS = 100
     
-    def __init__(self, api: Optional[BlockstreamAPI] = None):
+    def __init__(self, api: BlockstreamAPI | None = None):
         """
         Initialize fee estimator.
         
@@ -153,7 +153,7 @@ class FeeEstimator:
     
     def get_recommended_fee(
         self,
-        operation: str = "issue_certificate"
+        operation: Literal["issue_certificate", "revoke_certificate", "drain_vault", "batch_issue"] = "issue_certificate"
     ) -> int:
         """
         Get recommended fee for an operation.

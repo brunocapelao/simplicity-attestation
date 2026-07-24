@@ -5,18 +5,17 @@ Manages external binary dependencies (hal-simplicity, simc).
 Downloads and caches binaries automatically on first use.
 """
 
-import sys
-import platform
 import hashlib
-import tarfile
-import zipfile
-import stat
+import platform
 import shutil
-from pathlib import Path
-from typing import Optional, Dict
-from dataclasses import dataclass
-import urllib.request
+import stat
+import sys
+import tarfile
 import urllib.error
+import urllib.request
+import zipfile
+from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -25,12 +24,12 @@ class ToolInfo:
     name: str
     version: str
     description: str
-    urls: Dict[str, str]  # platform -> url
-    checksums: Dict[str, str]  # platform -> sha256
+    urls: dict[str, str]  # platform -> url
+    checksums: dict[str, str]  # platform -> sha256
 
 
 # Tool definitions
-TOOLS: Dict[str, ToolInfo] = {
+TOOLS: dict[str, ToolInfo] = {
     "hal-simplicity": ToolInfo(
         name="hal-simplicity",
         version="1.0.0",
@@ -68,7 +67,6 @@ TOOLS: Dict[str, ToolInfo] = {
 
 class ToolError(Exception):
     """Error with tool management."""
-    pass
 
 
 class ToolManager:
@@ -93,7 +91,7 @@ class ToolManager:
     
     DEFAULT_CACHE_DIR = Path.home() / ".sap-sdk"
     
-    def __init__(self, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_dir: Path | None = None):
         """
         Initialize tool manager.
         
@@ -164,7 +162,7 @@ class ToolManager:
         except ToolError:
             return False
     
-    def status(self) -> Dict[str, dict]:
+    def status(self) -> dict[str, dict]:
         """Get status of all tools."""
         result = {}
         for name, info in TOOLS.items():
@@ -255,7 +253,7 @@ class ToolManager:
         except urllib.error.URLError as e:
             raise ToolError(f"Failed to download {tool_name}: {e}")
     
-    def install_all(self, force: bool = False) -> Dict[str, Path]:
+    def install_all(self, force: bool = False) -> dict[str, Path]:
         """Install all required tools."""
         result = {}
         for tool_name in TOOLS:
@@ -271,7 +269,7 @@ class ToolManager:
             return self.get_path(tool_name)
         return self.install(tool_name)
     
-    def ensure_all_installed(self) -> Dict[str, Path]:
+    def ensure_all_installed(self) -> dict[str, Path]:
         """Ensure all tools are installed."""
         result = {}
         for tool_name in TOOLS:
@@ -329,7 +327,7 @@ class ToolManager:
 
 
 # Convenience function
-def ensure_tools() -> Dict[str, Path]:
+def ensure_tools() -> dict[str, Path]:
     """
     Ensure all required tools are installed.
     

@@ -4,18 +4,17 @@ SAS SDK - Hal-Simplicity CLI Wrapper
 Provides a clean Python interface to the hal-simplicity command-line tool.
 """
 
-import subprocess
 import json
 import shutil
-from typing import Optional, List, Tuple
+import subprocess
 from pathlib import Path
+from typing import cast
 
 from ..models import RunResult
 
 
 class HalSimplicityError(Exception):
     """Error from hal-simplicity CLI."""
-    pass
 
 
 class HalSimplicity:
@@ -28,7 +27,7 @@ class HalSimplicity:
     
     DEFAULT_BINARY = "hal-simplicity"
     
-    def __init__(self, binary_path: Optional[str] = None, network: str = "liquid"):
+    def __init__(self, binary_path: str | None = None, network: str = "liquid"):
         """
         Initialize HalSimplicity wrapper.
         
@@ -62,7 +61,7 @@ class HalSimplicity:
                 f"Please install from: https://github.com/brunocapelao/hal-simplicity"
             )
     
-    def _run(self, args: List[str]) -> Tuple[str, Optional[str]]:
+    def _run(self, args: list[str]) -> tuple[str, str | None]:
         """
         Run hal-simplicity command.
 
@@ -77,7 +76,7 @@ class HalSimplicity:
 
         return result.stdout.strip(), None
     
-    def _run_json(self, args: List[str]) -> dict:
+    def _run_json(self, args: list[str]) -> dict:
         """Run command and parse JSON output."""
         output, err = self._run(args)
         if err:
@@ -87,7 +86,7 @@ class HalSimplicity:
             data = json.loads(output)
             if isinstance(data, dict) and data.get("error"):
                 raise HalSimplicityError(f"hal-simplicity error: {data['error']}")
-            return data
+            return cast(dict, data)
         except json.JSONDecodeError as e:
             raise HalSimplicityError(f"Invalid JSON output: {e}\nOutput: {output}")
     
@@ -95,7 +94,7 @@ class HalSimplicity:
     # PSET Operations
     # =========================================================================
     
-    def pset_create(self, inputs: List[dict], outputs: List[dict]) -> str:
+    def pset_create(self, inputs: list[dict], outputs: list[dict]) -> str:
         """
         Create a new PSET (Partially Signed Elements Transaction).
         
@@ -116,7 +115,7 @@ class HalSimplicity:
             outputs_json
         ])
         
-        return result["pset"]
+        return cast(str, result["pset"])
     
     def pset_update_input(
         self,
@@ -155,7 +154,7 @@ class HalSimplicity:
             "--internal-key", internal_key
         ])
         
-        return result["pset"]
+        return cast(str, result["pset"])
     
     def pset_run(
         self,
@@ -217,7 +216,7 @@ class HalSimplicity:
             witness
         ])
         
-        return result["pset"]
+        return cast(str, result["pset"])
     
     def pset_extract(self, pset: str) -> str:
         """

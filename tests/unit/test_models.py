@@ -3,12 +3,17 @@ Unit tests for SDK data models.
 """
 
 import pytest
-from sdk.models import (
-    UTXO, Certificate, Vault, TransactionResult,
-    CertificateStatus, IssuerType, SpendingPath,
-    JetResult, RunResult
-)
+
 from sdk.constants import MIN_ISSUE_SATS
+from sdk.models import (
+    Certificate,
+    CertificateStatus,
+    IssuerType,
+    RunResult,
+    SpendingPath,
+    TransactionResult,
+    Vault,
+)
 
 
 class TestUTXO:

@@ -5,32 +5,33 @@ High-level interface for SAS operations.
 This is the primary entry point for SDK users.
 """
 
-from pathlib import Path
-from typing import Optional, List, Literal, Callable
 import logging
+from collections.abc import Callable
+from pathlib import Path
+from typing import Literal
 
 from .config import SASConfig
-from .models import Certificate, Vault, TransactionResult, CertificateStatus
-from .constants import MIN_ISSUE_SATS
-from .core.transaction import TransactionBuilder
-from .core.contracts import ContractRegistry
-from .infra.hal import HalSimplicity
-from .infra.api import BlockstreamAPI
-from .protocols.sas import SAPProtocol
 
 # New production features
-from .confirmation import ConfirmationTracker, ConfirmationStatus
-from .fees import FeeEstimator, FeePriority, FeeEstimate
-from .events import EventEmitter, EventType
-from .logging import StructuredLogger
+from .confirmation import ConfirmationStatus, ConfirmationTracker
+from .constants import MIN_ISSUE_SATS
+from .core.contracts import ContractRegistry
+from .core.transaction import TransactionBuilder
 from .errors import (
-    VaultEmptyError,
-    InsufficientFundsError,
     CertificateNotFoundError,
+    InsufficientFundsError,
+    VaultEmptyError,
 )
+from .events import EventEmitter, EventType
+from .fees import FeeEstimate, FeeEstimator, FeePriority
+from .infra.api import BlockstreamAPI
+from .infra.hal import HalSimplicity
+from .logging import StructuredLogger
+from .models import Certificate, CertificateStatus, TransactionResult, Vault
 
 # External signature support
 from .prepared import PreparedTransaction, TransactionType
+from .protocols.sas import SAPProtocol
 
 
 class SAPClient:
@@ -68,9 +69,9 @@ class SAPClient:
     def __init__(
         self,
         config: SASConfig,
-        hal: Optional[HalSimplicity] = None,
-        api: Optional[BlockstreamAPI] = None,
-        logger: Optional[logging.Logger] = None,
+        hal: HalSimplicity | None = None,
+        api: BlockstreamAPI | None = None,
+        logger: logging.Logger | None = None,
         enable_events: bool = True
     ):
         """
@@ -241,9 +242,9 @@ class SAPClient:
         txid: str,
         vout: int = 1,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None,
+        recipient: str | None = None,
+        reason_code: int | None = None,
+        replacement_txid: str | None = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -302,7 +303,7 @@ class SAPClient:
         else:
             return CertificateStatus.VALID
     
-    def get_certificate(self, txid: str, vout: int = 1) -> Optional[Certificate]:
+    def get_certificate(self, txid: str, vout: int = 1) -> Certificate | None:
         """
         Get certificate details.
         
@@ -329,8 +330,8 @@ class SAPClient:
                 # Try to decode SAS payload
                 hex_data = op_return.get("scriptpubkey", "")[4:]  # Skip OP_RETURN opcode
                 sap = self.sap_protocol.decode_hex(hex_data)
-                if hasattr(sap, 'cid'):
-                    cid = sap.cid
+                if sap is not None and hasattr(sap, 'cid'):
+                    cid = getattr(sap, 'cid', '') or ''
         
         # Get confirmation info
         tx_status = self.api.get_tx_status(txid)
@@ -352,7 +353,7 @@ class SAPClient:
             revoked_at=revoked_at
         )
     
-    def list_certificates(self) -> List[Certificate]:
+    def list_certificates(self) -> list[Certificate]:
         """
         List all certificate UTXOs at the certificate address.
         
@@ -442,9 +443,9 @@ class SAPClient:
         txid: str,
         vout: int = 1,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None
+        recipient: str | None = None,
+        reason_code: int | None = None,
+        replacement_txid: str | None = None
     ) -> PreparedTransaction:
         """
         Prepare a certificate revocation for external signing.
@@ -668,7 +669,7 @@ class SAPClient:
     
     def estimate_fee(
         self,
-        operation: str = "issue_certificate",
+        operation: Literal["issue_certificate", "revoke_certificate", "drain_vault", "batch_issue"] = "issue_certificate",
         priority: FeePriority = FeePriority.MEDIUM
     ) -> FeeEstimate:
         """
@@ -706,7 +707,7 @@ class SAPClient:
             return self.events.on(event_type)
         return lambda f: f  # No-op if events disabled
     
-    def emit(self, event_type: EventType, data: dict = None) -> None:
+    def emit(self, event_type: EventType, data: dict | None = None) -> None:
         """
         Emit an event to all registered handlers.
         

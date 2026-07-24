@@ -3,6 +3,7 @@ Unit tests for WitnessEncoder (bit-level witness encoding).
 """
 
 import pytest
+
 from sdk.core.witness import WitnessEncoder
 
 

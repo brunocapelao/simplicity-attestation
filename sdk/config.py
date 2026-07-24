@@ -8,7 +8,6 @@ Separates public configuration from private keys for security.
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -39,8 +38,8 @@ class NetworkConfig:
     internal_key: str
     hal_binary: str = "hal-simplicity"
     api_base_url: str = "https://blockstream.info/liquidtestnet/api"
-    admin_public_key: Optional[str] = None
-    delegate_public_key: Optional[str] = None
+    admin_public_key: str | None = None
+    delegate_public_key: str | None = None
     
     @classmethod
     def from_file(cls, path: str) -> "NetworkConfig":

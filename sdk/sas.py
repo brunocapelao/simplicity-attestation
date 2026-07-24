@@ -37,24 +37,22 @@ Example (Delegate Operations - Different Company):
     sap.issue_certificate(cid)
 """
 
-import subprocess
-import json
 import hmac
+import json
 import re
+import subprocess
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass, asdict
-from typing import Optional, Literal, List, Union
+from typing import Literal
 
-from .models import Certificate, Vault, TransactionResult, UTXO, CertificateStatus
-from .infra.hal import HalSimplicity
-from .infra.api import BlockstreamAPI
-from .infra.keys import KeyManager
+from .constants import CERT_DUST_SATS, FEE_SATS, MIN_ISSUE_SATS
 from .core.witness import WitnessEncoder
+from .errors import InsufficientFundsError, SAPError, VaultEmptyError
+from .infra.api import BlockstreamAPI, BlockstreamAPIError
+from .infra.hal import HalSimplicity, HalSimplicityError
+from .infra.keys import KeyManager
+from .models import UTXO, Certificate, CertificateStatus, TransactionResult, Vault
 from .protocols.sas import SAPProtocol
-from .errors import SAPError, VaultEmptyError, InsufficientFundsError
-from .infra.hal import HalSimplicityError
-from .infra.api import BlockstreamAPIError
-from .constants import FEE_SATS, CERT_DUST_SATS, MIN_ISSUE_SATS
 
 
 class CompilationError(SAPError):
@@ -70,7 +68,6 @@ class CompilationError(SAPError):
         >>> SAS.create_vault(admin_pubkey, delegate_pubkey)
         CompilationError: Contract not found: /path/to/vault.simf
     """
-    pass
 
 
 class ConfigurationError(SAPError):
@@ -86,7 +83,6 @@ class ConfigurationError(SAPError):
         >>> SAS.as_admin(config, wrong_private_key)
         ConfigurationError: Private key doesn't match expected admin configuration.
     """
-    pass
 
 
 class PermissionError(SAPError):
@@ -101,7 +97,6 @@ class PermissionError(SAPError):
         >>> delegate_sdk.drain_vault(recipient)
         PermissionError: Only admin can drain vault
     """
-    pass
 
 
 # =============================================================================
@@ -140,7 +135,7 @@ def _is_hex(value: str) -> bool:
 
 def _script_pubkey_to_address(script_pubkey: str, network: str) -> str:
     """Encode a taproot scriptPubKey into a bech32m address."""
-    from embit import bech32
+    from embit import bech32  # type: ignore[import-untyped]
 
     if not script_pubkey.startswith("5120") or len(script_pubkey) != 68:
         raise ValueError("Invalid taproot scriptPubKey")
@@ -148,7 +143,7 @@ def _script_pubkey_to_address(script_pubkey: str, network: str) -> str:
     # Accept both "testnet" and "liquidtestnet" for testnet addresses
     hrp = "tex" if network in ("testnet", "liquidtestnet") else "ex"
     output_key = bytes.fromhex(script_pubkey[4:])
-    return bech32.encode(hrp, 1, output_key)
+    return str(bech32.encode(hrp, 1, output_key))
 
 def _script_hash_from_script_pubkey(script_pubkey: str) -> str:
     """Return the u256 script hash (sha256 of scriptPubKey bytes) as hex."""
@@ -265,6 +260,9 @@ class SAS:
     INTERNAL_KEY = "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0"
     DEFAULT_HAL_PATH = "hal-simplicity"
     DEFAULT_SIMC_PATH = "simc"
+
+    role: Literal["admin", "delegate", "read_only"]
+    _key: KeyManager | None
     
     # =========================================================================
     # Factory Methods
@@ -276,9 +274,9 @@ class SAS:
         admin_pubkey: str,
         delegate_pubkey: str,
         network: str = "testnet",
-        hal_path: Optional[str] = None,
-        simc_path: Optional[str] = None,
-        contracts_dir: Optional[str] = None,
+        hal_path: str | None = None,
+        simc_path: str | None = None,
+        contracts_dir: str | None = None,
     ) -> VaultConfig:
         """
         Create a new vault configuration.
@@ -296,12 +294,12 @@ class SAS:
         """
         hal_path = hal_path or cls.DEFAULT_HAL_PATH
         simc_path = simc_path or cls.DEFAULT_SIMC_PATH
-        contracts_dir = Path(contracts_dir) if contracts_dir else cls._find_contracts_dir()
+        resolved_contracts_dir = Path(contracts_dir) if contracts_dir else cls._find_contracts_dir()
         network_config = cls.NETWORKS.get(network, cls.NETWORKS["testnet"])
 
         # Compile certificate first so we can compute its script hash for vault covenants.
         cert_data = cls._compile_contract_with_keys(
-            contracts_dir / "certificate.simf",
+            resolved_contracts_dir / "certificate.simf",
             admin_pubkey, delegate_pubkey,
             simc_path, hal_path, network
         )
@@ -314,7 +312,7 @@ class SAS:
 
         # Update contracts with pubkeys (+ cert hash) and compile
         vault_data = cls._compile_contract_with_keys(
-            contracts_dir / "vault.simf",
+            resolved_contracts_dir / "vault.simf",
             admin_pubkey,
             delegate_pubkey,
             simc_path,
@@ -349,11 +347,54 @@ class SAS:
         )
     
     @classmethod
+    def read_only(
+        cls,
+        config: str | VaultConfig,
+        hal_path: str | None = None,
+    ) -> "SAS":
+        """
+        Create a read-only SAS instance (no signing capability).
+
+        Can prepare PSETs, finalize with external signatures, verify documents,
+        and query certificate/vault status. Cannot sign directly.
+
+        Args:
+            config: VaultConfig or path to config JSON.
+            hal_path: Path to hal-simplicity binary.
+
+        Returns:
+            SAS instance without signing capability.
+        """
+        if isinstance(config, str):
+            config = VaultConfig.load(config)
+
+        instance = cls.__new__(cls)
+        instance.config = config
+        instance.role = "read_only"
+        instance._key = None  # No signing capability
+
+        # Normalize network name: "liquidtestnet" -> "testnet"
+        network = "testnet" if config.network in ("testnet", "liquidtestnet") else "mainnet"
+
+        # Initialize infrastructure
+        network_config = cls.NETWORKS[network]
+        instance.hal = HalSimplicity(
+            hal_path or cls.DEFAULT_HAL_PATH,
+            network_config["hal_network"]
+        )
+        instance.api = BlockstreamAPI(
+            network_config["api_url"],
+            "testnet" if network == "testnet" else "mainnet"
+        )
+
+        return instance
+
+    @classmethod
     def as_admin(
         cls,
-        config: Union[str, VaultConfig],
+        config: str | VaultConfig,
         private_key: str,
-        hal_path: Optional[str] = None,
+        hal_path: str | None = None,
     ) -> "SAS":
         """
         Create SDK instance as ADMIN.
@@ -383,9 +424,9 @@ class SAS:
     @classmethod
     def as_delegate(
         cls,
-        config: Union[str, VaultConfig],
+        config: str | VaultConfig,
         private_key: str,
-        hal_path: Optional[str] = None,
+        hal_path: str | None = None,
     ) -> "SAS":
         """
         Create SDK instance as DELEGATE.
@@ -427,7 +468,7 @@ class SAS:
         config: VaultConfig,
         role: Literal["admin", "delegate"],
         private_key: str,
-        hal_path: Optional[str] = None,
+        hal_path: str | None = None,
     ):
         """Initialize SAS instance. Use as_admin() or as_delegate() instead."""
         self.config = config
@@ -496,15 +537,20 @@ class SAS:
     def drain_vault(self, recipient: str) -> TransactionResult:
         """
         Drain all vault funds to recipient.
-        
+
         ADMIN ONLY - unconditional spend.
-        
+
         Args:
             recipient: Address to send funds.
-        
+
         Returns:
             TransactionResult.
         """
+        if self._key is None:
+            raise RuntimeError(
+                "Direct signing not available in read-only mode. "
+                "Use prepare/finalize flow."
+            )
         if self.role != "admin":
             raise PermissionError("Only admin can drain vault")
         
@@ -531,10 +577,17 @@ class SAS:
             TransactionResult with txid.
 
         Raises:
+            RuntimeError: If instance is read-only.
             ValueError: If CID is empty or exceeds 75 bytes.
             InsufficientFundsError: If vault balance is below minimum.
             VaultEmptyError: If vault has no UTXOs.
         """
+        if self._key is None:
+            raise RuntimeError(
+                "Direct signing not available in read-only mode. "
+                "Use prepare/finalize flow."
+            )
+
         # Validate CID before doing any work
         cid = _validate_cid(cid)
 
@@ -551,9 +604,9 @@ class SAS:
         self,
         txid: str,
         vout: int = 1,
-        recipient: Optional[str] = None,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None
+        recipient: str | None = None,
+        reason_code: int | None = None,
+        replacement_txid: str | None = None
     ) -> TransactionResult:
         """
         Revoke a certificate.
@@ -573,8 +626,15 @@ class SAS:
             TransactionResult.
 
         Raises:
+            RuntimeError: If instance is read-only.
             ValueError: If txid or replacement_txid is not valid hex.
         """
+        if self._key is None:
+            raise RuntimeError(
+                "Direct signing not available in read-only mode. "
+                "Use prepare/finalize flow."
+            )
+
         # Validate inputs
         txid = _validate_hex(txid, "txid", 64)
         if replacement_txid:
@@ -604,7 +664,7 @@ class SAS:
         
         return CertificateStatus.REVOKED
     
-    def list_certificates(self) -> List[Certificate]:
+    def list_certificates(self) -> list[Certificate]:
         """List all active certificates."""
         utxos = self.api.get_utxos(self.certificate_address)
         return [
@@ -650,15 +710,19 @@ class SAS:
                 internal_key=self.config.internal_key
             )
             
+            if self._key is None or self.role not in ("admin", "delegate"):
+                raise RuntimeError("Signing not available in read-only mode")
+            signer_role: Literal["admin", "delegate"] = "admin" if self.role == "admin" else "delegate"
+
             dummy_witness = WitnessEncoder.vault_dummy(
-                "admin_issue" if self.role == "admin" else "delegate_issue"
+                "admin_issue" if signer_role == "admin" else "delegate_issue"
             )
             run_result = self.hal.pset_run(pset, 0, self.config.vault_program, dummy_witness)
             if not run_result.sig_all_hash:
                 raise SAPError("Unable to extract sig_all_hash for vault spend (hal-simplicity pset run)")
             
             signature = self._key.sign_hash(run_result.sig_all_hash)
-            witness = WitnessEncoder.encode_vault_witness(signature, self.role, False)
+            witness = WitnessEncoder.encode_vault_witness(signature, signer_role, False)
             
             finalized = self.hal.pset_finalize(pset, 0, self.config.vault_program, witness)
             tx_hex = self.hal.pset_extract(finalized)
@@ -675,9 +739,9 @@ class SAS:
     def _build_and_sign_revoke(
         self,
         cert_utxo: UTXO,
-        recipient: Optional[str],
-        reason_code: Optional[int],
-        replacement_txid: Optional[str]
+        recipient: str | None,
+        reason_code: int | None,
+        replacement_txid: str | None
     ) -> TransactionResult:
         """Build and sign certificate revocation."""
         
@@ -723,13 +787,17 @@ class SAS:
                 internal_key=self.config.internal_key
             )
             
-            dummy_witness = WitnessEncoder.certificate_dummy(self.role)
+            if self._key is None or self.role not in ("admin", "delegate"):
+                raise RuntimeError("Signing not available in read-only mode")
+            signer_role: Literal["admin", "delegate"] = "admin" if self.role == "admin" else "delegate"
+
+            dummy_witness = WitnessEncoder.certificate_dummy(signer_role)
             run_result = self.hal.pset_run(pset, 0, self.config.certificate_program, dummy_witness)
             if not run_result.sig_all_hash:
                 raise SAPError("Unable to extract sig_all_hash for certificate spend (hal-simplicity pset run)")
             
             signature = self._key.sign_hash(run_result.sig_all_hash)
-            witness = WitnessEncoder.encode_certificate_witness(signature, self.role)
+            witness = WitnessEncoder.encode_certificate_witness(signature, signer_role)
             
             finalized = self.hal.pset_finalize(pset, 0, self.config.certificate_program, witness)
             tx_hex = self.hal.pset_extract(finalized)
@@ -745,6 +813,9 @@ class SAS:
 
     def _build_and_sign_drain(self, vault_utxo: UTXO, recipient: str) -> TransactionResult:
         """Build and sign vault drain (admin unconditional)."""
+        if self._key is None:
+            raise RuntimeError("Signing not available in read-only mode")
+
         output_sats = vault_utxo.value - FEE_SATS
         
         inputs = [{"txid": vault_utxo.txid, "vout": vault_utxo.vout}]
@@ -828,7 +899,7 @@ class SAS:
         simc_path: str,
         hal_path: str,
         network: str,
-        cert_script_hash: Optional[str] = None,
+        cert_script_hash: str | None = None,
     ) -> dict:
         """Compile contract with given pubkeys."""
         if not template_path.exists():

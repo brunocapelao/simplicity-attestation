@@ -4,10 +4,11 @@ SAS SDK - Event Hooks
 Event system for before/after operation callbacks.
 """
 
-from typing import Callable, Dict, List, Any, Optional
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-import logging
+from typing import Any
 
 
 class EventType(Enum):
@@ -43,7 +44,7 @@ class EventType(Enum):
 class Event:
     """Event payload passed to handlers."""
     type: EventType
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     timestamp: float = 0.0
     
     def __post_init__(self):
@@ -53,7 +54,7 @@ class Event:
 
 
 # Type alias for event handlers
-EventHandler = Callable[[Event], Optional[Any]]
+EventHandler = Callable[[Event], Any | None]
 
 
 class EventEmitter:
@@ -72,15 +73,15 @@ class EventEmitter:
         emitter.emit(EventType.BEFORE_BROADCAST, {"tx_hex": "..."})
     """
     
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         """
         Initialize event emitter.
         
         Args:
             logger: Optional logger for event debugging.
         """
-        self._handlers: Dict[EventType, List[EventHandler]] = {}
-        self._global_handlers: List[EventHandler] = []
+        self._handlers: dict[EventType, list[EventHandler]] = {}
+        self._global_handlers: list[EventHandler] = []
         self.logger = logger
     
     def on(self, event_type: EventType) -> Callable:
@@ -141,7 +142,7 @@ class EventEmitter:
         """
         self._global_handlers.append(handler)
     
-    def emit(self, event_type: EventType, data: Dict[str, Any] = None) -> List[Any]:
+    def emit(self, event_type: EventType, data: dict[str, Any] | None = None) -> list[Any]:
         """
         Emit an event to all registered handlers.
         
@@ -204,7 +205,7 @@ class EventEmitter:
             except Exception:
                 pass  # Avoid infinite recursion
     
-    def clear(self, event_type: EventType = None) -> None:
+    def clear(self, event_type: EventType | None = None) -> None:
         """
         Clear handlers.
         
@@ -217,7 +218,7 @@ class EventEmitter:
             self._handlers.clear()
             self._global_handlers.clear()
     
-    def handler_count(self, event_type: EventType = None) -> int:
+    def handler_count(self, event_type: EventType | None = None) -> int:
         """Get number of registered handlers."""
         if event_type:
             return len(self._handlers.get(event_type, []))

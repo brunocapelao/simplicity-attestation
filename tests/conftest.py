@@ -4,16 +4,16 @@ SAS SDK Test Configuration
 Shared fixtures and test utilities.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock
-from pathlib import Path
 import sys
+from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
 
 # Ensure sdk is importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sdk.models import UTXO, Vault, TransactionResult, Certificate, CertificateStatus
-
+from sdk.models import UTXO, Certificate, CertificateStatus, TransactionResult, Vault
 
 # =============================================================================
 # Mock Fixtures
@@ -37,7 +37,7 @@ def mock_api():
 @pytest.fixture
 def mock_hal():
     """Mock HalSimplicity for isolated testing."""
-    from sdk.models import RunResult, JetResult
+    from sdk.models import JetResult, RunResult
 
     hal = Mock()
     hal.pset_create.return_value = "base64pset=="

@@ -4,7 +4,7 @@ SAS SDK - Witness Encoder
 Handles bit-level encoding of witnesses for Simplicity spending paths.
 """
 
-from typing import Literal, Union
+from typing import Literal
 
 
 class WitnessEncoder:
@@ -26,7 +26,7 @@ class WitnessEncoder:
     """
 
     @staticmethod
-    def _normalize_signature(signature: Union[bytes, str]) -> bytes:
+    def _normalize_signature(signature: bytes | str) -> bytes:
         """
         Normalize signature to bytes.
 
@@ -173,7 +173,7 @@ class WitnessEncoder:
     @classmethod
     def encode_vault_witness(
         cls,
-        signature: Union[bytes, str],
+        signature: bytes | str,
         issuer: Literal["admin", "delegate"],
         unconditional: bool = False
     ) -> str:
@@ -200,7 +200,7 @@ class WitnessEncoder:
     @classmethod
     def encode_certificate_witness(
         cls,
-        signature: Union[bytes, str],
+        signature: bytes | str,
         revoker: Literal["admin", "delegate"]
     ) -> str:
         """

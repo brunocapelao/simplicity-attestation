@@ -5,7 +5,7 @@ Unit tests for input validation helpers in sdk/sas.py.
 import pytest
 
 # Import validation functions from sas module
-from sdk.sas import _validate_hex, _validate_cid, _is_hex
+from sdk.sas import _is_hex, _validate_cid, _validate_hex
 
 
 class TestValidateHex:

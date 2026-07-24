@@ -5,17 +5,17 @@ High-level transaction construction for SAS operations.
 Encapsulates the 8-step PSET workflow into simple method calls.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
-from ..models import UTXO, TransactionResult
 from ..config import SASConfig
-from ..constants import FEE_SATS, CERT_DUST_SATS
-from .witness import WitnessEncoder
-from .contracts import ContractRegistry
-from ..infra.hal import HalSimplicity
+from ..constants import CERT_DUST_SATS, FEE_SATS
 from ..infra.api import BlockstreamAPI
+from ..infra.hal import HalSimplicity
 from ..infra.keys import KeyManager
+from ..models import UTXO, TransactionResult
 from ..protocols.sas import SAPProtocol
+from .contracts import ContractRegistry
+from .witness import WitnessEncoder
 
 
 class TransactionBuilder:
@@ -144,9 +144,9 @@ class TransactionBuilder:
         self,
         cert_utxo: UTXO,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None,
+        recipient: str | None = None,
+        reason_code: int | None = None,
+        replacement_txid: str | None = None,
         broadcast: bool = True
     ) -> TransactionResult:
         """
@@ -274,7 +274,7 @@ class TransactionBuilder:
         outputs: list,
         contract,
         utxo_value: int,
-        signer_role: str,
+        signer_role: Literal["admin", "delegate"],
         dummy_witness: str,
         witness_encoder,
         broadcast: bool
@@ -364,8 +364,8 @@ class TransactionBuilder:
         self,
         txid: str,
         vout: int,
-        reason_code: Optional[int],
-        replacement_txid: Optional[str]
+        reason_code: int | None,
+        replacement_txid: str | None
     ) -> str:
         """Build SAS REVOKE OP_RETURN payload with optional reason code."""
         return SAPProtocol.encode_revoke(
@@ -423,9 +423,9 @@ class TransactionBuilder:
         self,
         cert_utxo: UTXO,
         revoker: Literal["admin", "delegate"] = "admin",
-        recipient: Optional[str] = None,
-        reason_code: Optional[int] = None,
-        replacement_txid: Optional[str] = None
+        recipient: str | None = None,
+        reason_code: int | None = None,
+        replacement_txid: str | None = None
     ) -> dict:
         """Prepare certificate revocation for external signing."""
         cert = self.contracts.certificate
@@ -555,7 +555,7 @@ class TransactionBuilder:
         program: str,
         witness_template: str,
         signature: bytes,
-        issuer: str,
+        issuer: Literal["admin", "delegate"],
         broadcast: bool = True
     ) -> TransactionResult:
         """

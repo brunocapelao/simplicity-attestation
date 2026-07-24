@@ -8,9 +8,12 @@ through properties or serialization. The private key is only used internally
 for signing operations.
 """
 
-from typing import Optional
-from embit import ec
-from embit.ec import SchnorrSig
+import logging
+
+from embit import ec  # type: ignore[import-untyped]
+from embit.ec import SchnorrSig  # type: ignore[import-untyped]
+
+logger = logging.getLogger(__name__)
 
 
 class KeyManager:
@@ -26,7 +29,7 @@ class KeyManager:
 
     __slots__ = ('_private_key', '_public_key_hex')  # Prevent __dict__ access
 
-    def __init__(self, private_key: str, public_key: Optional[str] = None):
+    def __init__(self, private_key: str, public_key: str | None = None):
         """
         Initialize key manager.
 
@@ -34,7 +37,11 @@ class KeyManager:
             private_key: Hex-encoded 32-byte private key.
             public_key: Optional hex-encoded public key (derived if not provided).
         """
-        self._private_key = ec.PrivateKey(bytes.fromhex(private_key))
+        try:
+            self._private_key = ec.PrivateKey(bytes.fromhex(private_key))
+        except ValueError as e:
+            logger.debug("KeyManager: invalid hex string (length=%d)", len(private_key))
+            raise e
 
         # Derive public key if not provided
         if public_key:
@@ -78,9 +85,13 @@ class KeyManager:
         Returns:
             64-byte signature.
         """
-        message_bytes = bytes.fromhex(message)
+        try:
+            message_bytes = bytes.fromhex(message)
+        except ValueError as e:
+            logger.debug("KeyManager: schnorr_sign received invalid hex message")
+            raise e
         signature = self._private_key.schnorr_sign(message_bytes)
-        return signature.serialize()
+        return bytes(signature.serialize())
     
     def sign_hash(self, sig_all_hash: str) -> bytes:
         """
@@ -111,6 +122,8 @@ class KeyManager:
             message_bytes = bytes.fromhex(message)
             pubkey = self._private_key.get_public_key()
             sig_obj = SchnorrSig(signature)
-            return pubkey.schnorr_verify(sig_obj, message_bytes)
-        except Exception:
+            return bool(pubkey.schnorr_verify(sig_obj, message_bytes))
+        except Exception as e:
+            if isinstance(e, ValueError) and "non-hexadecimal" in str(e):
+                logger.debug("KeyManager: verify received invalid hex message")
             return False

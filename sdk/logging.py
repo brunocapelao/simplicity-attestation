@@ -4,12 +4,13 @@ SAS SDK - Structured Logging
 Provides structured logging for audit and debugging.
 """
 
-import logging
 import json
+import logging
 import time
-from typing import Optional, Dict, Any, Callable
-from dataclasses import dataclass, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 from enum import Enum
+from typing import Any
 
 
 class LogLevel(Enum):
@@ -28,11 +29,11 @@ class LogEntry:
     level: str
     message: str
     component: str
-    operation: Optional[str] = None
-    txid: Optional[str] = None
-    duration_ms: Optional[float] = None
-    details: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    operation: str | None = None
+    txid: str | None = None
+    duration_ms: float | None = None
+    details: dict[str, Any] | None = None
+    error: str | None = None
     
     def to_dict(self) -> dict:
         """Convert to dictionary, excluding None values."""
@@ -65,7 +66,7 @@ class StructuredLogger:
     def __init__(
         self,
         component: str = "sap-sdk",
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
         json_output: bool = True,
         include_timestamps: bool = True
     ):
@@ -96,10 +97,10 @@ class StructuredLogger:
         self,
         level: LogLevel,
         message: str,
-        operation: str = None,
-        txid: str = None,
-        duration_ms: float = None,
-        error: str = None,
+        operation: str | None = None,
+        txid: str | None = None,
+        duration_ms: float | None = None,
+        error: str | None = None,
         **kwargs
     ) -> LogEntry:
         """Create and emit a log entry."""
@@ -141,12 +142,12 @@ class StructuredLogger:
         """Log warning message."""
         return self._log(LogLevel.WARNING, message, **kwargs)
     
-    def error(self, message: str, error: Exception = None, **kwargs) -> LogEntry:
+    def error(self, message: str, error: Exception | None = None, **kwargs) -> LogEntry:
         """Log error message."""
         error_str = str(error) if error else None
         return self._log(LogLevel.ERROR, message, error=error_str, **kwargs)
     
-    def critical(self, message: str, error: Exception = None, **kwargs) -> LogEntry:
+    def critical(self, message: str, error: Exception | None = None, **kwargs) -> LogEntry:
         """Log critical message."""
         error_str = str(error) if error else None
         return self._log(LogLevel.CRITICAL, message, error=error_str, **kwargs)
@@ -180,9 +181,9 @@ class OperationContext:
         self.logger = logger
         self.operation = operation
         self.start_time: float = 0
-        self.txid: Optional[str] = None
-        self.details: Dict[str, Any] = {}
-        self.error: Optional[Exception] = None
+        self.txid: str | None = None
+        self.details: dict[str, Any] = {}
+        self.error: Exception | None = None
     
     def __enter__(self) -> "OperationContext":
         self.start_time = time.time()

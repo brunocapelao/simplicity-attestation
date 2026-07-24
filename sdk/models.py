@@ -5,10 +5,9 @@ Core data structures used throughout the SDK.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List
 from enum import Enum
 
-from .constants import MIN_ISSUE_SATS, CERT_DUST_SATS, FEE_SATS
+from .constants import MIN_ISSUE_SATS
 
 
 class CertificateStatus(Enum):
@@ -37,8 +36,8 @@ class UTXO:
     txid: str
     vout: int
     value: int  # satoshis
-    asset: Optional[str] = None
-    script_pubkey: Optional[str] = None
+    asset: str | None = None
+    script_pubkey: str | None = None
     
     @property
     def outpoint(self) -> str:
@@ -54,11 +53,11 @@ class Certificate:
     """Represents a SAS certificate."""
     txid: str
     vout: int
-    cid: str
+    cid: str | None = None
     status: CertificateStatus = CertificateStatus.UNKNOWN
-    issued_at: Optional[int] = None  # block height
-    revoked_at: Optional[int] = None
-    issuer: Optional[IssuerType] = None
+    issued_at: int | None = None  # block height
+    revoked_at: int | None = None
+    issuer: IssuerType | None = None
     value: int = 546  # satoshis (dust limit)
     
     @property
@@ -80,7 +79,7 @@ class Vault:
     cmr: str
     program: str
     balance: int = 0  # total satoshis
-    utxos: List[UTXO] = field(default_factory=list)
+    utxos: list[UTXO] = field(default_factory=list)
 
     @property
     def can_issue(self) -> bool:
@@ -95,7 +94,7 @@ class Vault:
         return self.balance >= MIN_ISSUE_SATS
 
     @property
-    def available_utxo(self) -> Optional[UTXO]:
+    def available_utxo(self) -> UTXO | None:
         """Get the first available UTXO for spending."""
         return self.utxos[0] if self.utxos else None
 
@@ -104,11 +103,11 @@ class Vault:
 class TransactionResult:
     """Result of a transaction operation."""
     success: bool
-    txid: Optional[str] = None
-    raw_hex: Optional[str] = None
-    error: Optional[str] = None
+    txid: str | None = None
+    raw_hex: str | None = None
+    error: str | None = None
 
-    def explorer_url(self, network: str = "testnet") -> Optional[str]:
+    def explorer_url(self, network: str = "testnet") -> str | None:
         """
         Get Blockstream explorer URL for this transaction.
 
@@ -129,15 +128,15 @@ class JetResult:
     """Result from a Simplicity jet execution."""
     jet: str
     success: bool
-    output_value: Optional[str] = None
+    output_value: str | None = None
 
 
 @dataclass
 class RunResult:
     """Result from running a Simplicity program."""
     success: bool
-    jets: List[JetResult] = field(default_factory=list)
-    sig_all_hash: Optional[str] = None
+    jets: list[JetResult] = field(default_factory=list)
+    sig_all_hash: str | None = None
     
     @classmethod
     def from_dict(cls, data: dict) -> "RunResult":

@@ -7,6 +7,7 @@ Demonstrates how to use the SDK for common operations.
 
 from sdk import SAPClient
 
+
 def main():
     # Initialize client from config
     print("=" * 60)

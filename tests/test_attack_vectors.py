@@ -21,17 +21,17 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from embit import ec
 
 from sdk import SAS
-from sdk.protocols.sas import SAPProtocol
 from sdk.infra.hal import HalSimplicity
+from sdk.protocols.sas import SAPProtocol
 from sdk.sas import VaultConfig
 
 

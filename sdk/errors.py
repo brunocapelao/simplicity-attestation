@@ -4,13 +4,12 @@ SAS SDK - Error Types
 Specific exception classes for better error handling and debugging.
 """
 
-from typing import Optional, List
 
 
 class SAPError(Exception):
     """Base exception for all SAS SDK errors."""
     
-    def __init__(self, message: str, details: Optional[dict] = None):
+    def __init__(self, message: str, details: dict | None = None):
         super().__init__(message)
         self.message = message
         self.details = details or {}
@@ -27,17 +26,14 @@ class SAPError(Exception):
 
 class ConfigurationError(SAPError):
     """Error in SDK configuration."""
-    pass
 
 
 class MissingConfigError(ConfigurationError):
     """Required configuration is missing."""
-    pass
 
 
 class InvalidConfigError(ConfigurationError):
     """Configuration value is invalid."""
-    pass
 
 
 # =============================================================================
@@ -46,23 +42,20 @@ class InvalidConfigError(ConfigurationError):
 
 class KeyError(SAPError):
     """Error related to cryptographic keys."""
-    pass
 
 
 class InvalidKeyError(KeyError):
     """Key format is invalid."""
-    pass
 
 
 class SignatureError(SAPError):
     """Error during signature creation or verification."""
-    pass
 
 
 class SignatureVerificationError(SignatureError):
     """Signature verification failed."""
     
-    def __init__(self, message: str = "Signature verification failed", failed_jets: Optional[List[str]] = None):
+    def __init__(self, message: str = "Signature verification failed", failed_jets: list[str] | None = None):
         super().__init__(message, {"failed_jets": failed_jets or []})
         self.failed_jets = failed_jets or []
 
@@ -73,13 +66,12 @@ class SignatureVerificationError(SignatureError):
 
 class TransactionError(SAPError):
     """Error during transaction construction or broadcast."""
-    pass
 
 
 class InsufficientFundsError(TransactionError):
     """Not enough funds to complete the operation."""
     
-    def __init__(self, required: int, available: int, message: Optional[str] = None):
+    def __init__(self, required: int, available: int, message: str | None = None):
         msg = message or f"Insufficient funds: required {required} sats, available {available} sats"
         super().__init__(msg, {"required": required, "available": available})
         self.required = required
@@ -89,7 +81,7 @@ class InsufficientFundsError(TransactionError):
 class BroadcastError(TransactionError):
     """Error broadcasting transaction to the network."""
     
-    def __init__(self, message: str, tx_hex: Optional[str] = None):
+    def __init__(self, message: str, tx_hex: str | None = None):
         super().__init__(message, {"tx_hex_length": len(tx_hex) if tx_hex else 0})
         self.tx_hex = tx_hex
 
@@ -121,7 +113,6 @@ class ConfirmationTimeoutError(TransactionError):
 
 class UTXOError(SAPError):
     """Error related to UTXO operations."""
-    pass
 
 
 class UTXONotFoundError(UTXOError):
@@ -136,7 +127,7 @@ class UTXONotFoundError(UTXOError):
 class UTXOAlreadySpentError(UTXOError):
     """UTXO has already been spent."""
     
-    def __init__(self, txid: str, vout: int, spending_txid: Optional[str] = None):
+    def __init__(self, txid: str, vout: int, spending_txid: str | None = None):
         super().__init__(
             f"UTXO already spent: {txid}:{vout}",
             {"txid": txid, "vout": vout, "spending_txid": spending_txid}
@@ -152,7 +143,6 @@ class UTXOAlreadySpentError(UTXOError):
 
 class CertificateError(SAPError):
     """Error related to certificate operations."""
-    pass
 
 
 class CertificateNotFoundError(CertificateError):
@@ -179,7 +169,6 @@ class CertificateAlreadyRevokedError(CertificateError):
 
 class VaultError(SAPError):
     """Error related to vault operations."""
-    pass
 
 
 class VaultEmptyError(VaultError):
@@ -192,7 +181,6 @@ class VaultEmptyError(VaultError):
 
 class VaultInsufficientFundsError(VaultError, InsufficientFundsError):
     """Vault doesn't have enough funds for the operation."""
-    pass
 
 
 # =============================================================================
@@ -201,13 +189,12 @@ class VaultInsufficientFundsError(VaultError, InsufficientFundsError):
 
 class NetworkError(SAPError):
     """Error communicating with the blockchain network."""
-    pass
 
 
 class APIError(NetworkError):
     """Error from the blockchain API."""
     
-    def __init__(self, message: str, status_code: Optional[int] = None, endpoint: Optional[str] = None):
+    def __init__(self, message: str, status_code: int | None = None, endpoint: str | None = None):
         super().__init__(message, {"status_code": status_code, "endpoint": endpoint})
         self.status_code = status_code
         self.endpoint = endpoint
@@ -215,12 +202,10 @@ class APIError(NetworkError):
 
 class ConnectionError(NetworkError):
     """Cannot connect to the blockchain network."""
-    pass
 
 
 class TimeoutError(NetworkError):
     """Request to blockchain network timed out."""
-    pass
 
 
 # =============================================================================
@@ -229,7 +214,6 @@ class TimeoutError(NetworkError):
 
 class PayloadError(SAPError):
     """Error related to OP_RETURN payload."""
-    pass
 
 
 class PayloadTooLargeError(PayloadError):
@@ -246,7 +230,6 @@ class PayloadTooLargeError(PayloadError):
 
 class InvalidPayloadError(PayloadError):
     """Payload format is invalid."""
-    pass
 
 
 # =============================================================================
@@ -256,7 +239,7 @@ class InvalidPayloadError(PayloadError):
 class HalSimplicityError(SAPError):
     """Error from hal-simplicity CLI tool."""
     
-    def __init__(self, message: str, command: Optional[str] = None, stderr: Optional[str] = None):
+    def __init__(self, message: str, command: str | None = None, stderr: str | None = None):
         super().__init__(message, {"command": command, "stderr": stderr})
         self.command = command
         self.stderr = stderr
@@ -264,9 +247,7 @@ class HalSimplicityError(SAPError):
 
 class HalNotFoundError(HalSimplicityError):
     """hal-simplicity binary not found."""
-    pass
 
 
 class ProgramExecutionError(HalSimplicityError):
     """Error executing Simplicity program."""
-    pass

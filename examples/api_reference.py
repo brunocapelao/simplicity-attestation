@@ -1,12 +1,13 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import Literal, Optional
-import uuid
-import time
 import os
+import time
+import uuid
+from typing import Literal
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 # Importamos o SDK do SAS
-from sdk import SAPClient, PreparedTransaction
+from sdk import PreparedTransaction, SAPClient
 from sdk.models import TransactionResult
 
 app = FastAPI(title="SAS Offline Signing Reference API")
@@ -107,7 +108,7 @@ async def finalize_certificate(request: FinalizeRequest):
     except ValueError:
         raise HTTPException(status_code=400, detail="Formato de assinatura inválido (esperado 64 bytes hex)")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro no broadcast: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no broadcast: {e!s}")
 
 @app.get("/api/v1/certificates/status/{txid}")
 async def get_status(txid: str):

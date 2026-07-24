@@ -5,19 +5,17 @@ These tests cover the client interface for vault operations,
 certificate issuance, and revocation flows.
 """
 
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from dataclasses import dataclass
 
-from sdk.models import UTXO, Vault, Certificate, TransactionResult, CertificateStatus
-from sdk.constants import MIN_ISSUE_SATS, FEE_SATS, CERT_DUST_SATS
+from sdk.constants import CERT_DUST_SATS, FEE_SATS, MIN_ISSUE_SATS
 from sdk.errors import (
-    VaultEmptyError,
-    InsufficientFundsError,
     CertificateNotFoundError,
+    InsufficientFundsError,
+    VaultEmptyError,
 )
-from sdk.roles import Role, RoleContext, Permissions, PermissionError
-
+from sdk.models import UTXO, Certificate, CertificateStatus, TransactionResult, Vault
+from sdk.roles import PermissionError, Permissions, Role, RoleContext
 
 # =============================================================================
 # Helper Fixtures

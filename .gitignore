@@ -17,6 +17,8 @@ target/
 # IDE
 .vscode/
 .idea/
+.claude/
+.code-review-graph/
 *.swp
 *.swo
 *~
@@ -38,8 +40,9 @@ secrets*.json
 .env
 .env.*
 
-# Python caches
+# Python & test caches
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
+htmlcov/

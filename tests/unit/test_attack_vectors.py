@@ -9,13 +9,12 @@ For full E2E attack vector testing with the actual binary, use:
     tests/test_attack_vectors.py (standalone script)
 """
 
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
-from sdk.protocols.sas import SAPProtocol
+from sdk.constants import CERT_DUST_SATS, FEE_SATS
 from sdk.core.witness import WitnessEncoder
-from sdk.constants import MIN_ISSUE_SATS, FEE_SATS, CERT_DUST_SATS
-
+from sdk.protocols.sas import SAPProtocol
 
 # =============================================================================
 # Covenant Attack Vector Tests (Logic Level)
@@ -297,7 +296,7 @@ class TestReplayAttacks:
         
         # Changing ANY of these changes the sig_all_hash
         # Therefore, a signature is bound to one specific transaction
-        pass  # This is enforced by Simplicity, tested in test_attack_vectors.py
+        # This is enforced by Simplicity, tested in test_attack_vectors.py
 
 
 # =============================================================================
